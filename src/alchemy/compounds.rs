@@ -48,53 +48,48 @@ impl Ord for Element {
 
 const ALTON_COUNT: u32 = 7;
 
-#[derive(Clone, Eq, Debug, Default, Hash, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
 pub struct Compound {
-    pub elements: Vec<Element>,
+    pub element_count: collections::HashMap<Element, u32>,
 }
 
-impl PartialEq for Compound {
-    fn eq(&self, other: &Self) -> bool {
-        self.element_count() == other.element_count()
+impl From<Compound> for Vec<Element> {
+    fn from(compound: Compound) -> Vec<Element> {
+        compound
+            .element_count
+            .iter()
+            .map(|(e, v)| (0..*v).map(move |_| *e))
+            .flatten()
+            .collect::<Vec<Element>>()
     }
 }
 
 impl Compound {
-    pub fn element_count(&self) -> collections::HashMap<Element, u32> {
-        let mut result = collections::HashMap::new();
-        for element in self.elements.clone() {
-            *result.entry(element).or_insert(0) += 1;
-        }
-        result
-    }
-
-    pub fn alton_count(&self) -> u32 {
-        self.elements.iter().map(|e| e.altons()).sum()
+    pub fn altons(&self) -> u32 {
+        self.element_count.iter().map(|(e, v)| e.altons() * v).sum()
     }
 
     pub fn react(&mut self, other: &mut Compound) {
-        let mut total_elements = self.elements.clone();
-        total_elements.extend(other.elements.clone());
-        self.elements.clear();
-        other.elements.clear();
-
+        let mut total_elements = Vec::<Element>::from(self.clone());
+        total_elements.append(&mut other.clone().into());
         total_elements.sort();
         total_elements.reverse();
 
+        self.element_count.clear();
+        other.element_count.clear();
+
         for element in total_elements {
             let altons = element.altons();
-            if self.alton_count() + altons <= ALTON_COUNT
-                && other.alton_count() + altons <= ALTON_COUNT
-            {
+            if self.altons() + altons <= ALTON_COUNT && other.altons() + altons <= ALTON_COUNT {
                 if random::<bool>() {
-                    self.elements.push(element);
+                    *self.element_count.entry(element).or_insert(0) += 1;
                 } else {
-                    other.elements.push(element);
+                    *other.element_count.entry(element).or_insert(0) += 1;
                 }
-            } else if self.alton_count() + altons > 7 {
-                other.elements.push(element);
-            } else if other.alton_count() + altons > 7 {
-                self.elements.push(element);
+            } else if self.altons() + altons > ALTON_COUNT {
+                *other.element_count.entry(element).or_insert(0) += 1;
+            } else if other.altons() + altons > ALTON_COUNT {
+                *self.element_count.entry(element).or_insert(0) += 1;
             }
         }
     }
