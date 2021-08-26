@@ -1,6 +1,10 @@
-use rand::random;
+use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
 use std::{cmp, collections, fmt};
+
+trait AltonWeighable {
+    fn weight(&self) -> u32;
+}
 
 /// The most basic alchemical object.
 #[derive(Copy, Clone, Eq, PartialEq, PartialOrd, Debug, Hash, Serialize, Deserialize)]
@@ -12,8 +16,8 @@ pub enum Element {
     E,
 }
 
-impl Element {
-    pub fn altons(&self) -> u32 {
+impl AltonWeighable for Element {
+    fn weight(&self) -> u32 {
         match self {
             Element::A => 1,
             Element::B => 2,
@@ -42,7 +46,7 @@ impl fmt::Display for Element {
 
 impl Ord for Element {
     fn cmp(&self, other: &Self) -> cmp::Ordering {
-        self.altons().cmp(&other.altons())
+        self.weight().cmp(&other.weight())
     }
 }
 
@@ -62,6 +66,12 @@ impl fmt::Display for CompoundError {
                 s, ALTON_COUNT
             ),
         }
+    }
+}
+
+impl AltonWeighable for collections::HashMap<Element, u32> {
+    fn weight(&self) -> u32 {
+        self.iter().map(|(e, v)| e.weight() * v).sum()
     }
 }
 
@@ -105,6 +115,12 @@ impl fmt::Display for Compound {
     }
 }
 
+impl AltonWeighable for Compound {
+    fn weight(&self) -> u32 {
+        self.element_counts.weight()
+    }
+}
+
 impl Compound {
     pub fn try_from_element_counts(
         a: u32,
@@ -128,20 +144,13 @@ impl Compound {
             Ok(result)
         } else {
             Err(CompoundError::SizeError {
-                size: result.altons(),
+                size: result.weight(),
             })
         }
     }
 
-    fn altons(&self) -> u32 {
-        self.element_counts
-            .iter()
-            .map(|(e, v)| e.altons() * v)
-            .sum()
-    }
-
     fn validate(&self) -> bool {
-        self.altons() == ALTON_COUNT
+        self.weight() == ALTON_COUNT
     }
 
     /// Remove entries with values equal to 0
@@ -155,28 +164,70 @@ impl Compound {
     }
 
     pub fn react(&mut self, other: &mut Compound) {
-        let mut total_elements = Vec::<Element>::from(self.clone());
-        total_elements.append(&mut other.clone().into());
-        total_elements.sort();
-        total_elements.reverse();
+        let mut total_element_counts = self.element_counts.clone();
+        other
+            .element_counts
+            .clone()
+            .into_iter()
+            .map(|(e, v)| *total_element_counts.entry(e).or_insert(0) += v)
+            .for_each(drop);
 
-        self.element_counts.clear();
-        other.element_counts.clear();
+        fn enumerate_possible_reactions(
+            total_element_counts: &collections::HashMap<Element, u32>,
+            left_element_counts: collections::HashMap<Element, u32>,
+            right_element_counts: collections::HashMap<Element, u32>,
+        ) -> Vec<(
+            collections::HashMap<Element, u32>,
+            collections::HashMap<Element, u32>,
+        )> {
+            if left_element_counts.weight() > ALTON_COUNT
+                || right_element_counts.weight() > ALTON_COUNT
+            {
+                Vec::new()
+            } else if total_element_counts.weight() == 0 {
+                vec![(left_element_counts, right_element_counts)]
+            } else {
+                let (selected_element, selected_element_count) = total_element_counts
+                    .clone()
+                    .into_iter()
+                    .filter(|(_, v)| *v > 0)
+                    .next()
+                    .expect("We've already checked for an empty total_element_counts");
+                let mut new_total_element_counts = total_element_counts.clone();
+                new_total_element_counts.insert(selected_element, selected_element_count - 1);
+                let mut left_insert = left_element_counts.clone();
+                *left_insert.entry(selected_element).or_insert(0) += 1;
+                let mut right_insert = right_element_counts.clone();
+                *right_insert.entry(selected_element).or_insert(0) += 1;
 
-        for element in total_elements {
-            let altons = element.altons();
-            if self.altons() + altons <= ALTON_COUNT && other.altons() + altons <= ALTON_COUNT {
-                if random::<bool>() {
-                    *self.element_counts.entry(element).or_insert(0) += 1;
-                } else {
-                    *other.element_counts.entry(element).or_insert(0) += 1;
-                }
-            } else if self.altons() + altons > ALTON_COUNT {
-                *other.element_counts.entry(element).or_insert(0) += 1;
-            } else if other.altons() + altons > ALTON_COUNT {
-                *self.element_counts.entry(element).or_insert(0) += 1;
+                let mut possible_reactions = Vec::new();
+                possible_reactions.append(&mut enumerate_possible_reactions(
+                    &new_total_element_counts,
+                    left_insert,
+                    right_element_counts,
+                ));
+                possible_reactions.append(&mut enumerate_possible_reactions(
+                    &new_total_element_counts,
+                    left_element_counts,
+                    right_insert,
+                ));
+
+                possible_reactions
             }
         }
+
+        let possible_reactions = enumerate_possible_reactions(
+            &total_element_counts,
+            collections::HashMap::new(),
+            collections::HashMap::new(),
+        );
+
+        let (self_reaction, other_reaction) = possible_reactions
+            .choose(&mut rand::thread_rng())
+            .expect("There should at least be two reactions: the current state and its inverse");
+
+        self.element_counts = self_reaction.clone();
+        other.element_counts = other_reaction.clone();
         self.clean();
         other.clean();
     }
