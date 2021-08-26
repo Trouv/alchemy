@@ -50,13 +50,13 @@ const ALTON_COUNT: u32 = 7;
 
 #[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
 pub struct Compound {
-    pub element_count: collections::HashMap<Element, u32>,
+    element_counts: collections::HashMap<Element, u32>,
 }
 
 impl From<Compound> for Vec<Element> {
     fn from(compound: Compound) -> Vec<Element> {
         compound
-            .element_count
+            .element_counts
             .iter()
             .map(|(e, v)| (0..*v).map(move |_| *e))
             .flatten()
@@ -64,9 +64,68 @@ impl From<Compound> for Vec<Element> {
     }
 }
 
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Hash, Serialize, Deserialize)]
+pub enum CompoundError {
+    SizeError { size: u32 },
+}
+
+impl fmt::Display for CompoundError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            CompoundError::SizeError { size: s } => write!(
+                f,
+                "invalid alton count in Compound: {} (should be {})",
+                s, ALTON_COUNT
+            ),
+        }
+    }
+}
+
 impl Compound {
-    pub fn altons(&self) -> u32 {
-        self.element_count.iter().map(|(e, v)| e.altons() * v).sum()
+    pub fn try_from_element_counts(
+        a: u32,
+        b: u32,
+        c: u32,
+        d: u32,
+        e: u32,
+    ) -> Result<Compound, CompoundError> {
+        let mut element_counts = collections::HashMap::new();
+        element_counts.insert(Element::A, a);
+        element_counts.insert(Element::B, b);
+        element_counts.insert(Element::C, c);
+        element_counts.insert(Element::D, d);
+        element_counts.insert(Element::E, e);
+
+        let result = Compound { element_counts };
+
+        if result.validate() {
+            Ok(result)
+        } else {
+            Err(CompoundError::SizeError {
+                size: result.altons(),
+            })
+        }
+    }
+
+    fn altons(&self) -> u32 {
+        self.element_counts
+            .iter()
+            .map(|(e, v)| e.altons() * v)
+            .sum()
+    }
+
+    fn validate(&self) -> bool {
+        self.altons() == ALTON_COUNT
+    }
+
+    /// Remove entries with values equal to 0
+    fn clean(&mut self) {
+        self.element_counts = self
+            .element_counts
+            .clone()
+            .into_iter()
+            .filter(|(_, v)| *v != 0)
+            .collect::<collections::HashMap<Element, u32>>();
     }
 
     pub fn react(&mut self, other: &mut Compound) {
@@ -75,22 +134,29 @@ impl Compound {
         total_elements.sort();
         total_elements.reverse();
 
-        self.element_count.clear();
-        other.element_count.clear();
+        self.element_counts.clear();
+        other.element_counts.clear();
 
         for element in total_elements {
             let altons = element.altons();
             if self.altons() + altons <= ALTON_COUNT && other.altons() + altons <= ALTON_COUNT {
                 if random::<bool>() {
-                    *self.element_count.entry(element).or_insert(0) += 1;
+                    *self.element_counts.entry(element).or_insert(0) += 1;
                 } else {
-                    *other.element_count.entry(element).or_insert(0) += 1;
+                    *other.element_counts.entry(element).or_insert(0) += 1;
                 }
             } else if self.altons() + altons > ALTON_COUNT {
-                *other.element_count.entry(element).or_insert(0) += 1;
+                *other.element_counts.entry(element).or_insert(0) += 1;
             } else if other.altons() + altons > ALTON_COUNT {
-                *self.element_count.entry(element).or_insert(0) += 1;
+                *self.element_counts.entry(element).or_insert(0) += 1;
             }
         }
+        self.clean();
+        other.clean();
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
 }
