@@ -48,22 +48,6 @@ impl Ord for Element {
 
 const ALTON_COUNT: u32 = 7;
 
-#[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
-pub struct Compound {
-    element_counts: collections::HashMap<Element, u32>,
-}
-
-impl From<Compound> for Vec<Element> {
-    fn from(compound: Compound) -> Vec<Element> {
-        compound
-            .element_counts
-            .iter()
-            .map(|(e, v)| (0..*v).map(move |_| *e))
-            .flatten()
-            .collect::<Vec<Element>>()
-    }
-}
-
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Hash, Serialize, Deserialize)]
 pub enum CompoundError {
     SizeError { size: u32 },
@@ -78,6 +62,22 @@ impl fmt::Display for CompoundError {
                 s, ALTON_COUNT
             ),
         }
+    }
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
+pub struct Compound {
+    element_counts: collections::HashMap<Element, u32>,
+}
+
+impl From<Compound> for Vec<Element> {
+    fn from(compound: Compound) -> Vec<Element> {
+        compound
+            .element_counts
+            .iter()
+            .map(|(e, v)| (0..*v).map(move |_| *e))
+            .flatten()
+            .collect::<Vec<Element>>()
     }
 }
 
@@ -96,7 +96,9 @@ impl Compound {
         element_counts.insert(Element::D, d);
         element_counts.insert(Element::E, e);
 
-        let result = Compound { element_counts };
+        let mut result = Compound { element_counts };
+
+        result.clean();
 
         if result.validate() {
             Ok(result)
@@ -159,4 +161,73 @@ impl Compound {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_compound_equality() -> Result<(), CompoundError> {
+        assert_eq!(
+            Compound::try_from_element_counts(0, 1, 0, 0, 1)?,
+            Compound::try_from_element_counts(0, 1, 0, 0, 1)?
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn test_compound_appropriate_size_ok() -> Result<(), CompoundError> {
+        Compound::try_from_element_counts(7, 0, 0, 0, 0)?;
+        Compound::try_from_element_counts(2, 0, 0, 0, 1)?;
+        Compound::try_from_element_counts(3, 0, 0, 1, 0)?;
+        Compound::try_from_element_counts(0, 0, 1, 1, 0)?;
+        Ok(())
+    }
+
+    #[test]
+    fn test_compound_inappropriate_size_fails() {
+        assert_eq!(
+            Compound::try_from_element_counts(5, 0, 0, 0, 0),
+            Err(CompoundError::SizeError { size: 5 })
+        );
+        assert_eq!(
+            Compound::try_from_element_counts(0, 0, 0, 0, 2),
+            Err(CompoundError::SizeError { size: 10 })
+        );
+        assert_eq!(
+            Compound::try_from_element_counts(0, 1, 1, 1, 0),
+            Err(CompoundError::SizeError { size: 9 })
+        );
+        assert_eq!(
+            Compound::try_from_element_counts(0, 1, 0, 1, 0),
+            Err(CompoundError::SizeError { size: 6 })
+        );
+    }
+
+    #[test]
+    fn test_compound_reaction_validity() -> Result<(), CompoundError> {
+        let mut compound_a = Compound::try_from_element_counts(1, 3, 0, 0, 0)?;
+        let mut compound_b = Compound::try_from_element_counts(2, 1, 1, 0, 0)?;
+        let mut compound_c = Compound::try_from_element_counts(0, 1, 0, 0, 1)?;
+        let mut compound_d = Compound::try_from_element_counts(0, 0, 1, 1, 0)?;
+
+        compound_a.react(&mut compound_b);
+        compound_c.react(&mut compound_d);
+        assert_eq!(compound_a.validate(), true);
+        assert_eq!(compound_b.validate(), true);
+        assert_eq!(compound_c.validate(), true);
+        assert_eq!(compound_d.validate(), true);
+
+        compound_a.react(&mut compound_c);
+        compound_b.react(&mut compound_d);
+        assert_eq!(compound_a.validate(), true);
+        assert_eq!(compound_b.validate(), true);
+        assert_eq!(compound_c.validate(), true);
+        assert_eq!(compound_d.validate(), true);
+
+        compound_a.react(&mut compound_d);
+        compound_b.react(&mut compound_c);
+        assert_eq!(compound_a.validate(), true);
+        assert_eq!(compound_b.validate(), true);
+        assert_eq!(compound_c.validate(), true);
+        assert_eq!(compound_d.validate(), true);
+
+        Ok(())
+    }
 }
