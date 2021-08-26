@@ -81,6 +81,30 @@ impl From<Compound> for Vec<Element> {
     }
 }
 
+impl fmt::Display for Compound {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut element_count_pairs = self
+            .clone()
+            .element_counts
+            .into_iter()
+            .collect::<Vec<(Element, u32)>>();
+        element_count_pairs.sort_by(|a, b| a.0.cmp(&b.0));
+
+        write!(
+            f,
+            "{}",
+            element_count_pairs
+                .into_iter()
+                .map(|(e, v)| if v > 1 {
+                    format!("{}{}", v, e)
+                } else {
+                    e.to_string()
+                })
+                .collect::<String>()
+        )
+    }
+}
+
 impl Compound {
     pub fn try_from_element_counts(
         a: u32,
@@ -207,6 +231,11 @@ mod tests {
         let mut compound_c = Compound::try_from_element_counts(0, 1, 0, 0, 1)?;
         let mut compound_d = Compound::try_from_element_counts(0, 0, 1, 1, 0)?;
 
+        println!(
+            "{} {} {} {}",
+            compound_a, compound_b, compound_c, compound_d
+        );
+
         compound_a.react(&mut compound_b);
         compound_c.react(&mut compound_d);
         assert_eq!(compound_a.validate(), true);
@@ -214,12 +243,21 @@ mod tests {
         assert_eq!(compound_c.validate(), true);
         assert_eq!(compound_d.validate(), true);
 
+        println!(
+            "{} {} {} {}",
+            compound_a, compound_b, compound_c, compound_d
+        );
+
         compound_a.react(&mut compound_c);
         compound_b.react(&mut compound_d);
         assert_eq!(compound_a.validate(), true);
         assert_eq!(compound_b.validate(), true);
         assert_eq!(compound_c.validate(), true);
         assert_eq!(compound_d.validate(), true);
+        println!(
+            "{} {} {} {}",
+            compound_a, compound_b, compound_c, compound_d
+        );
 
         compound_a.react(&mut compound_d);
         compound_b.react(&mut compound_c);
@@ -227,6 +265,10 @@ mod tests {
         assert_eq!(compound_b.validate(), true);
         assert_eq!(compound_c.validate(), true);
         assert_eq!(compound_d.validate(), true);
+        println!(
+            "{} {} {} {}",
+            compound_a, compound_b, compound_c, compound_d
+        );
 
         Ok(())
     }
