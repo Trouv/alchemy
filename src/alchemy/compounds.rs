@@ -1,11 +1,7 @@
-use nom::{
-    character::complete::{char, u32},
-    combinator::opt,
-    IResult,
-};
+use nom::{character::complete, combinator, IResult};
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
-use std::{cmp, collections, convert::TryFrom, fmt};
+use std::{cmp, collections::HashMap, convert::TryFrom, fmt};
 use thiserror::Error;
 
 trait AltonWeighable {
@@ -24,7 +20,7 @@ pub enum Element {
 
 fn element_parser_maker(element: Element) -> impl Fn(&str) -> IResult<&str, Element> {
     move |input: &str| {
-        let (input, _) = char(
+        let (input, _) = complete::char(
             element
                 .to_string()
                 .chars()
@@ -79,7 +75,7 @@ pub enum CompoundError {
     ParseError,
 }
 
-impl AltonWeighable for collections::HashMap<Element, u32> {
+impl AltonWeighable for HashMap<Element, u32> {
     fn weight(&self) -> u32 {
         self.iter().map(|(e, v)| e.weight() * v).sum()
     }
@@ -88,29 +84,29 @@ impl AltonWeighable for collections::HashMap<Element, u32> {
 #[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
 #[serde(try_from = "&str")]
 pub struct Compound {
-    element_counts: collections::HashMap<Element, u32>,
+    element_counts: HashMap<Element, u32>,
 }
 
 fn element_count_parser(element: Element) -> impl Fn(&str) -> IResult<&str, (Element, u32)> {
     move |input: &str| {
-        let (input, multiplier) = opt(u32)(input)?;
+        let (input, multiplier) = combinator::opt(complete::u32)(input)?;
         let (input, element) = element_parser_maker(element)(input)?;
         Ok((input, (element, multiplier.unwrap_or(1))))
     }
 }
 
-fn element_counts_parser(input: &str) -> IResult<&str, collections::HashMap<Element, u32>> {
-    let (input, opt_a) = opt(element_count_parser(Element::A))(input)?;
-    let (input, opt_b) = opt(element_count_parser(Element::B))(input)?;
-    let (input, opt_c) = opt(element_count_parser(Element::C))(input)?;
-    let (input, opt_d) = opt(element_count_parser(Element::D))(input)?;
-    let (input, opt_e) = opt(element_count_parser(Element::E))(input)?;
+fn element_counts_parser(input: &str) -> IResult<&str, HashMap<Element, u32>> {
+    let (input, opt_a) = combinator::opt(element_count_parser(Element::A))(input)?;
+    let (input, opt_b) = combinator::opt(element_count_parser(Element::B))(input)?;
+    let (input, opt_c) = combinator::opt(element_count_parser(Element::C))(input)?;
+    let (input, opt_d) = combinator::opt(element_count_parser(Element::D))(input)?;
+    let (input, opt_e) = combinator::opt(element_count_parser(Element::E))(input)?;
     Ok((
         input,
         vec![opt_a, opt_b, opt_c, opt_d, opt_e]
             .into_iter()
             .flatten()
-            .collect::<collections::HashMap<Element, u32>>(),
+            .collect::<HashMap<Element, u32>>(),
     ))
 }
 
@@ -153,19 +149,17 @@ impl TryFrom<&str> for Compound {
     type Error = CompoundError;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        match element_counts_parser(value) {
+        match combinator::all_consuming(element_counts_parser)(value) {
             Ok((_, element_counts)) => Ok(Compound::try_from(element_counts)?),
             _ => Err(CompoundError::ParseError),
         }
     }
 }
 
-impl TryFrom<collections::HashMap<Element, u32>> for Compound {
+impl TryFrom<HashMap<Element, u32>> for Compound {
     type Error = CompoundError;
 
-    fn try_from(
-        element_counts: collections::HashMap<Element, u32>,
-    ) -> Result<Compound, Self::Error> {
+    fn try_from(element_counts: HashMap<Element, u32>) -> Result<Compound, Self::Error> {
         let mut result = Compound { element_counts };
 
         result.clean();
@@ -194,7 +188,7 @@ impl Compound {
         d: u32,
         e: u32,
     ) -> Result<Compound, CompoundError> {
-        let mut element_counts = collections::HashMap::new();
+        let mut element_counts = HashMap::new();
         element_counts.insert(Element::A, a);
         element_counts.insert(Element::B, b);
         element_counts.insert(Element::C, c);
@@ -215,7 +209,7 @@ impl Compound {
             .clone()
             .into_iter()
             .filter(|(_, v)| *v != 0)
-            .collect::<collections::HashMap<Element, u32>>();
+            .collect::<HashMap<Element, u32>>();
     }
 
     pub fn react(&mut self, other: &mut Compound) {
@@ -228,13 +222,10 @@ impl Compound {
             .for_each(drop);
 
         fn enumerate_possible_reactions(
-            total_element_counts: &collections::HashMap<Element, u32>,
-            left_element_counts: collections::HashMap<Element, u32>,
-            right_element_counts: collections::HashMap<Element, u32>,
-        ) -> Vec<(
-            collections::HashMap<Element, u32>,
-            collections::HashMap<Element, u32>,
-        )> {
+            total_element_counts: &HashMap<Element, u32>,
+            left_element_counts: HashMap<Element, u32>,
+            right_element_counts: HashMap<Element, u32>,
+        ) -> Vec<(HashMap<Element, u32>, HashMap<Element, u32>)> {
             if left_element_counts.weight() > ALTON_COUNT
                 || right_element_counts.weight() > ALTON_COUNT
             {
@@ -271,11 +262,8 @@ impl Compound {
             }
         }
 
-        let possible_reactions = enumerate_possible_reactions(
-            &total_element_counts,
-            collections::HashMap::new(),
-            collections::HashMap::new(),
-        );
+        let possible_reactions =
+            enumerate_possible_reactions(&total_element_counts, HashMap::new(), HashMap::new());
 
         let (self_reaction, other_reaction) = possible_reactions
             .choose(&mut rand::thread_rng())
