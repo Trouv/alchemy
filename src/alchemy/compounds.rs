@@ -1,6 +1,13 @@
+use nom::{
+    character::complete::{char, u32},
+    combinator::opt,
+    error::{ErrorKind, ParseError},
+    IResult,
+};
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
-use std::{cmp, collections, fmt};
+use std::{cmp, collections, convert, fmt};
+use thiserror::Error;
 
 trait AltonWeighable {
     fn weight(&self) -> u32;
@@ -14,6 +21,21 @@ pub enum Element {
     C,
     D,
     E,
+}
+
+fn element_parser_maker(
+    element: Element,
+) -> impl Fn(&str) -> IResult<&str, Element, ElementParseError> {
+    move |input: &str| {
+        let (input, _) = char(
+            element
+                .to_string()
+                .chars()
+                .next()
+                .expect("Element::to_string() should contain at least one character"),
+        )(input)?;
+        Ok((input, element))
+    }
 }
 
 impl AltonWeighable for Element {
@@ -52,20 +74,25 @@ impl Ord for Element {
 
 const ALTON_COUNT: u32 = 7;
 
-#[derive(Copy, Clone, Eq, PartialEq, Debug, Hash, Serialize, Deserialize)]
+#[derive(Error, Debug)]
 pub enum CompoundError {
+    #[error("invalid alton count in compound: {size}")]
     SizeError { size: u32 },
+    #[error("failed to parse compound")]
+    ParseError(#[from] ElementParseError),
 }
 
-impl fmt::Display for CompoundError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            CompoundError::SizeError { size: s } => write!(
-                f,
-                "invalid alton count in Compound: {} (should be {})",
-                s, ALTON_COUNT
-            ),
-        }
+#[derive(Error, Debug)]
+#[error("failed to parse element")]
+pub struct ElementParseError;
+
+impl ParseError<&str> for ElementParseError {
+    fn from_error_kind(input: &str, kind: ErrorKind) -> Self {
+        ElementParseError
+    }
+
+    fn append(input: &str, kind: ErrorKind, other: Self) -> Self {
+        ElementParseError
     }
 }
 
@@ -76,8 +103,37 @@ impl AltonWeighable for collections::HashMap<Element, u32> {
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
+#[serde(try_from = "String")]
 pub struct Compound {
     element_counts: collections::HashMap<Element, u32>,
+}
+
+fn element_count_parser(
+    element: Element,
+) -> impl Fn(&str) -> IResult<&str, u32, ElementParseError> {
+    move |input: &str| {
+        let (input, multiplier) = opt(u32)(input)?;
+        let (input, element) = element_parser_maker(element)(input)?;
+        Ok((input, multiplier.unwrap_or(1)))
+    }
+}
+
+fn compound_parser(input: &str) -> IResult<&str, Compound, CompoundError> {
+    let (input, opt_a) = opt(element_count_parser(Element::A))(input)?;
+    let (input, opt_b) = opt(element_count_parser(Element::B))(input)?;
+    let (input, opt_c) = opt(element_count_parser(Element::C))(input)?;
+    let (input, opt_d) = opt(element_count_parser(Element::D))(input)?;
+    let (input, opt_e) = opt(element_count_parser(Element::E))(input)?;
+    Ok((
+        input,
+        Compound::try_from_element_counts(
+            opt_a.unwrap_or(0),
+            opt_b.unwrap_or(0),
+            opt_c.unwrap_or(0),
+            opt_d.unwrap_or(0),
+            opt_e.unwrap_or(0),
+        )?,
+    ))
 }
 
 impl From<Compound> for Vec<Element> {
@@ -112,6 +168,14 @@ impl fmt::Display for Compound {
                 })
                 .collect::<String>()
         )
+    }
+}
+
+impl convert::TryFrom<String> for Compound {
+    type Error = CompoundError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        Ok(Compound::try_from_element_counts(0, 0, 0, 0, 0)?)
     }
 }
 
