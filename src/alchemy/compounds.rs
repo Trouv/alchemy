@@ -366,4 +366,35 @@ mod tests {
 
         Ok(())
     }
+
+    #[test]
+    fn test_compound_parsing() -> Result<(), CompoundError> {
+        assert_eq!(
+            Compound::try_from("2abc")?,
+            Compound::try_from_element_counts(2, 1, 1, 0, 0)?
+        );
+        assert_eq!(
+            Compound::try_from("be")?,
+            Compound::try_from_element_counts(0, 1, 0, 0, 1)?
+        );
+        assert_eq!(
+            Compound::try_from("3a1d")?,
+            Compound::try_from_element_counts(3, 0, 0, 1, 0)?
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn test_compound_parsing_failures() {
+        assert_eq!(Compound::try_from("d3a"), Err(CompoundError::ParseError));
+        assert_eq!(Compound::try_from("faf"), Err(CompoundError::ParseError));
+        assert_eq!(
+            Compound::try_from("abc"),
+            Err(CompoundError::SizeError { size: 6 })
+        );
+        assert_eq!(
+            Compound::try_from("acd"),
+            Err(CompoundError::SizeError { size: 8 })
+        );
+    }
 }
