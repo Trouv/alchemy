@@ -65,7 +65,7 @@ impl Ord for Element {
     }
 }
 
-const ALTON_COUNT: u32 = 7;
+const COMPOUND_WEIGHT: u32 = 7;
 
 #[derive(Error, Debug, PartialEq)]
 pub enum CompoundError {
@@ -156,6 +156,8 @@ impl TryFrom<&str> for Compound {
     }
 }
 
+/// All public constructors of Compound should just call this, since it's directly tied to the
+/// internal data structure, and performs the necessary validation.
 impl TryFrom<HashMap<Element, u32>> for Compound {
     type Error = CompoundError;
 
@@ -199,7 +201,7 @@ impl Compound {
     }
 
     fn validate(&self) -> bool {
-        self.weight() == ALTON_COUNT
+        self.weight() == COMPOUND_WEIGHT
     }
 
     /// Remove entries with values equal to 0
@@ -214,6 +216,9 @@ impl Compound {
 
     pub fn react(&mut self, other: &mut Compound) {
         let mut total_element_counts = self.element_counts.clone();
+
+        // Need a total_element_counts for the recursive algorithm
+        // So, we add the values of other's elment_counts to self's
         other
             .element_counts
             .clone()
@@ -226,26 +231,39 @@ impl Compound {
             left_element_counts: HashMap<Element, u32>,
             right_element_counts: HashMap<Element, u32>,
         ) -> Vec<(HashMap<Element, u32>, HashMap<Element, u32>)> {
-            if left_element_counts.weight() > ALTON_COUNT
-                || right_element_counts.weight() > ALTON_COUNT
+            if left_element_counts.weight() > COMPOUND_WEIGHT
+                || right_element_counts.weight() > COMPOUND_WEIGHT
             {
+                // The selected reaction is invalid
                 Vec::new()
             } else if total_element_counts.weight() == 0 {
+                // The selected reaction is valid and complete
+                // This assumes that self's and other's weight are COMPOUND_WEIGHT,
+                // which they should be, since the public constructers ensure it.
                 vec![(left_element_counts, right_element_counts)]
             } else {
+                // We need to pick an element to subtract from the total_element_counts
+                // and add to one of the new compounds for the next step of recursion.
+                // We just pick the first (nonzero) in .into_iter() since order shouldn't matter
                 let (selected_element, selected_element_count) = total_element_counts
                     .clone()
                     .into_iter()
                     .filter(|(_, v)| *v > 0)
                     .next()
                     .expect("We've already checked for an empty total_element_counts");
+
+                // Cloning to do this subtraction immutably,
+                // not sure this is totally necessary.
                 let mut new_total_element_counts = total_element_counts.clone();
                 new_total_element_counts.insert(selected_element, selected_element_count - 1);
+
+                // Create the new Compounds with the added element
                 let mut left_insert = left_element_counts.clone();
                 *left_insert.entry(selected_element).or_insert(0) += 1;
                 let mut right_insert = right_element_counts.clone();
                 *right_insert.entry(selected_element).or_insert(0) += 1;
 
+                // Recurse with both possible additions
                 let mut possible_reactions = Vec::new();
                 possible_reactions.append(&mut enumerate_possible_reactions(
                     &new_total_element_counts,
