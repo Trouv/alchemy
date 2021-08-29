@@ -18,9 +18,9 @@ pub enum StirMethod {
 
 #[derive(Clone, Eq, PartialEq, Debug, Default, Serialize, Deserialize)]
 pub struct ReactionRule {
-    compound: Compound,
+    pub compound: Compound,
     /// Setting to None means this compound reacts under any heat
-    heat: Option<Heat>,
+    pub heat: Option<Heat>,
     /// Setting to None means this compound reacts under any stir method
-    stir_method: Option<Heat>,
+    pub stir_method: Option<StirMethod>,
 }

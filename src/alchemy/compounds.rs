@@ -82,7 +82,7 @@ impl AltonWeighable for HashMap<Element, u32> {
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
-#[serde(try_from = "&str")]
+#[serde(try_from = "String")]
 pub struct Compound {
     element_counts: HashMap<Element, u32>,
 }
@@ -153,6 +153,14 @@ impl TryFrom<&str> for Compound {
             Ok((_, element_counts)) => Ok(Compound::try_from(element_counts)?),
             _ => Err(CompoundError::ParseError),
         }
+    }
+}
+
+impl TryFrom<String> for Compound {
+    type Error = CompoundError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        Ok(Compound::try_from(&value[..])?)
     }
 }
 

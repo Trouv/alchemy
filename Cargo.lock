@@ -62,6 +62,7 @@ dependencies = [
  "nom 7.0.0",
  "rand",
  "serde",
+ "serde_json",
  "thiserror",
 ]
 
