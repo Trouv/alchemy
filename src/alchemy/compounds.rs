@@ -110,17 +110,6 @@ fn element_counts_parser(input: &str) -> IResult<&str, HashMap<Element, u32>> {
     ))
 }
 
-impl From<Compound> for Vec<Element> {
-    fn from(compound: Compound) -> Vec<Element> {
-        compound
-            .element_counts
-            .iter()
-            .map(|(e, v)| (0..*v).map(move |_| *e))
-            .flatten()
-            .collect::<Vec<Element>>()
-    }
-}
-
 impl fmt::Display for Compound {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut element_count_pairs = self
