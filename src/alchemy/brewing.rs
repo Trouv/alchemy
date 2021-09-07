@@ -2,6 +2,7 @@ use crate::alchemy::compounds::Compound;
 use bevy::prelude::*;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 /// Heat may or may not be present on a Cauldron,
 /// If it's not present, no reaction should occur.
@@ -32,6 +33,9 @@ pub struct ReactionRule {
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Hash, Serialize, Deserialize)]
 struct Cauldron;
+
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Hash, Serialize, Deserialize)]
+struct RankDisplayer;
 
 fn get_reactive_compounds(
     reaction_rules: Vec<ReactionRule>,
@@ -78,5 +82,29 @@ fn brewing(
         {
             left.react(&mut right);
         }
+    }
+}
+
+fn compound_rank_display(
+    compound_query: Query<&Compound>,
+    mut rank_display_query: Query<&mut Text, With<RankDisplayer>>,
+) {
+    for mut rank_text in rank_display_query.iter_mut() {
+        let mut compound_counter: HashMap<String, u32> = HashMap::new();
+        for compound in compound_query.iter() {
+            *compound_counter.entry(compound.to_string()).or_insert(0) += 1;
+        }
+
+        let mut compound_counts = compound_counter.into_iter().collect::<Vec<(String, u32)>>();
+        compound_counts.sort_by(|(_, v1), (_, v2)| v1.cmp(v2));
+        compound_counts.reverse();
+
+        let mut result = "".to_string();
+        compound_counts
+            .into_iter()
+            .map(|(s, _)| result = format!("{}{}\n", result, s))
+            .for_each(drop);
+
+        rank_text.sections[0].value = result;
     }
 }
