@@ -102,7 +102,7 @@ pub fn compound_rank_display(
         let mut result = "".to_string();
         compound_counts
             .into_iter()
-            .map(|(s, _)| result = format!("{}{}\n", result, s))
+            .map(|(s, v)| result = format!("{}{} - {}\n", result, v, s))
             .for_each(drop);
 
         rank_text.sections[0].value = result;

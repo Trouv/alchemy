@@ -25,8 +25,20 @@ pub fn spawn_camera(mut commands: Commands) {
     commands.spawn_bundle(UiCameraBundle::default());
 }
 
-pub fn spawn_rank_display(mut commands: Commands) {
+pub fn spawn_rank_display(mut commands: Commands, assets: Res<AssetServer>) {
     commands
-        .spawn_bundle(TextBundle::default())
+        .spawn_bundle(TextBundle {
+            text: Text::with_section(
+                "",
+                TextStyle {
+                    font: assets.load("fonts/FreeMono.otf"),
+                    font_size: 30.0,
+                    color: Color::BLACK,
+                },
+                TextAlignment::default(),
+            ),
+
+            ..Default::default()
+        })
         .insert(RankDisplayer);
 }
