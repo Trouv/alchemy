@@ -1,15 +1,16 @@
 use crate::alchemy::{brewing::*, compounds::Compound};
 use bevy::prelude::*;
+use std::convert::TryFrom;
 
 pub fn spawn_test_compounds(mut commands: Commands) {
     for _ in 0..20 {
-        commands.spawn().insert(Compound::try_from("2abc").unwrap())
+        commands.spawn().insert(Compound::try_from("2abc").unwrap());
     }
     for _ in 0..30 {
-        commands.spawn().insert(Compound::try_from("cd").unwrap())
+        commands.spawn().insert(Compound::try_from("cd").unwrap());
     }
     for _ in 0..30 {
-        commands.spawn().insert(Compound::try_from("be").unwrap())
+        commands.spawn().insert(Compound::try_from("be").unwrap());
     }
 }
 
