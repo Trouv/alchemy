@@ -32,10 +32,10 @@ pub struct ReactionRule {
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Hash, Serialize, Deserialize)]
-struct Cauldron;
+pub struct Cauldron;
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Hash, Serialize, Deserialize)]
-struct RankDisplayer;
+pub struct RankDisplayer;
 
 fn get_reactive_compounds(
     reaction_rules: Vec<ReactionRule>,
@@ -62,7 +62,7 @@ const COLLISION_CHANCE: f32 = 0.1;
 /// Assumes there will only ever be one cauldron.
 /// In this case, we could technically handle it as a Resource, but I prefer the ergonomics of
 /// having it represented by many components.
-fn brewing(
+pub fn brewing(
     mut compound_query: Query<&mut Compound>,
     cauldron_query: Query<(&Heat, &StirMethod), With<Cauldron>>,
     reaction_rules: Res<Vec<ReactionRule>>,
@@ -85,7 +85,7 @@ fn brewing(
     }
 }
 
-fn compound_rank_display(
+pub fn compound_rank_display(
     compound_query: Query<&Compound>,
     mut rank_display_query: Query<&mut Text, With<RankDisplayer>>,
 ) {
@@ -109,7 +109,7 @@ fn compound_rank_display(
     }
 }
 
-fn reaction_test_input(
+pub fn reaction_test_input(
     mut cauldron_query: Query<(Entity, Option<&mut Heat>, &mut StirMethod), With<Cauldron>>,
     mut commands: Commands,
     input: Res<Input<KeyCode>>,
