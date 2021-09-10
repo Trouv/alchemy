@@ -1,8 +1,7 @@
 pub mod alchemy;
 
-use alchemy::{brewing::*, compounds::Compound};
+use alchemy::brewing::*;
 use bevy::prelude::*;
-use std::convert::TryFrom;
 use std::fs;
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Hash)]
@@ -20,6 +19,6 @@ fn main() {
 }
 
 fn load_reaction_rules() -> Vec<ReactionRule> {
-    let data = std::fs::read_to_string("assets/design/reaction_rules.json").unwrap();
+    let data = fs::read_to_string("assets/design/reaction_rules.json").unwrap();
     serde_json::from_str(&data).unwrap()
 }

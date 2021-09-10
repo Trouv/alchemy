@@ -2,7 +2,9 @@ use crate::alchemy::compounds::Compound;
 use bevy::prelude::*;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use serde_with::serde_as;
+use serde_with::DisplayFromStr;
+use std::{cmp::Ordering, collections::HashMap};
 
 /// Heat may or may not be present on a Cauldron,
 /// If it's not present, no reaction should occur.
@@ -22,8 +24,10 @@ pub enum StirMethod {
     QuadrupleStir,
 }
 
+#[serde_as]
 #[derive(Clone, Eq, PartialEq, Debug, Default, Serialize, Deserialize)]
 pub struct ReactionRule {
+    #[serde_as(as = "DisplayFromStr")]
     pub compound: Compound,
     /// Setting to None means this compound reacts under any heat
     pub heat: Option<Heat>,
@@ -59,6 +63,7 @@ fn get_reactive_compounds(
 }
 
 const COLLISION_CHANCE: f32 = 0.1;
+
 /// Assumes there will only ever be one cauldron.
 /// In this case, we could technically handle it as a Resource, but I prefer the ergonomics of
 /// having it represented by many components.
@@ -96,7 +101,10 @@ pub fn compound_rank_display(
         }
 
         let mut compound_counts = compound_counter.into_iter().collect::<Vec<(String, u32)>>();
-        compound_counts.sort_by(|(_, v1), (_, v2)| v1.cmp(v2));
+        compound_counts.sort_by(|(s1, v1), (s2, v2)| match v1.cmp(v2) {
+            Ordering::Equal => s1.cmp(s2),
+            other => other,
+        });
         compound_counts.reverse();
 
         let mut result = "".to_string();

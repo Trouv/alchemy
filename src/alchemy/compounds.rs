@@ -1,7 +1,7 @@
 use nom::{character::complete, combinator, IResult};
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
-use std::{cmp, collections::HashMap, convert::TryFrom, fmt};
+use std::{cmp, collections::HashMap, convert::TryFrom, fmt, str::FromStr};
 use thiserror::Error;
 
 trait AltonWeighable {
@@ -82,7 +82,6 @@ impl AltonWeighable for HashMap<Element, u32> {
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
-#[serde(try_from = "String")]
 pub struct Compound {
     element_counts: HashMap<Element, u32>,
 }
@@ -134,22 +133,14 @@ impl fmt::Display for Compound {
     }
 }
 
-impl TryFrom<&str> for Compound {
-    type Error = CompoundError;
+impl FromStr for Compound {
+    type Err = CompoundError;
 
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
         match combinator::all_consuming(element_counts_parser)(value) {
             Ok((_, element_counts)) => Ok(Compound::try_from(element_counts)?),
             _ => Err(CompoundError::ParseError),
         }
-    }
-}
-
-impl TryFrom<String> for Compound {
-    type Error = CompoundError;
-
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        Ok(Compound::try_from(&value[..])?)
     }
 }
 
@@ -385,15 +376,15 @@ mod tests {
     #[test]
     fn test_compound_parsing() -> Result<(), CompoundError> {
         assert_eq!(
-            Compound::try_from("2abc")?,
+            Compound::from_str("2abc")?,
             Compound::try_from_element_counts(2, 1, 1, 0, 0)?
         );
         assert_eq!(
-            Compound::try_from("be")?,
+            Compound::from_str("be")?,
             Compound::try_from_element_counts(0, 1, 0, 0, 1)?
         );
         assert_eq!(
-            Compound::try_from("3a1d")?,
+            Compound::from_str("3a1d")?,
             Compound::try_from_element_counts(3, 0, 0, 1, 0)?
         );
         Ok(())
@@ -401,14 +392,14 @@ mod tests {
 
     #[test]
     fn test_compound_parsing_failures() {
-        assert_eq!(Compound::try_from("d3a"), Err(CompoundError::ParseError));
-        assert_eq!(Compound::try_from("faf"), Err(CompoundError::ParseError));
+        assert_eq!(Compound::from_str("d3a"), Err(CompoundError::ParseError));
+        assert_eq!(Compound::from_str("faf"), Err(CompoundError::ParseError));
         assert_eq!(
-            Compound::try_from("abc"),
+            Compound::from_str("abc"),
             Err(CompoundError::SizeError { size: 6 })
         );
         assert_eq!(
-            Compound::try_from("acd"),
+            Compound::from_str("acd"),
             Err(CompoundError::SizeError { size: 8 })
         );
     }
