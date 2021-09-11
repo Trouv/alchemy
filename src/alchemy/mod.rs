@@ -1,8 +1,9 @@
 use crate::AppState;
 use bevy::{core::FixedTimestep, prelude::*};
 
-pub mod brewing;
+pub mod components;
 pub mod compounds;
+pub mod systems;
 pub mod transitions;
 
 pub struct BrewingPlugin;
@@ -19,12 +20,12 @@ impl Plugin for BrewingPlugin {
         .add_system_set(
             SystemSet::on_update(AppState::Brewing)
                 .with_run_criteria(FixedTimestep::step(0.1))
-                .with_system(brewing::brewing.system()),
+                .with_system(systems::brewing.system()),
         )
         .add_system_set(
             SystemSet::on_update(AppState::Brewing)
-                .with_system(brewing::compound_rank_display.system())
-                .with_system(brewing::reaction_test_input.system()),
+                .with_system(systems::compound_rank_display.system())
+                .with_system(systems::reaction_test_input.system()),
         );
     }
 }
