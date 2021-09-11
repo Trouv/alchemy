@@ -1,21 +1,7 @@
-use crate::alchemy::{components::*, compounds::Compound};
+use crate::alchemy::{components::*, compounds::Compound, resources::ReactionRule};
 use bevy::prelude::*;
 use rand::Rng;
-use serde::{Deserialize, Serialize};
-use serde_with::serde_as;
-use serde_with::DisplayFromStr;
 use std::{cmp::Ordering, collections::HashMap};
-
-#[serde_as]
-#[derive(Clone, Eq, PartialEq, Debug, Default, Serialize, Deserialize)]
-pub struct ReactionRule {
-    #[serde_as(as = "DisplayFromStr")]
-    pub compound: Compound,
-    /// Setting to None means this compound reacts under any heat
-    pub heat: Option<Heat>,
-    /// Setting to None means this compound reacts under any stir method
-    pub stir_method: Option<StirMethod>,
-}
 
 fn get_reactive_compounds(
     reaction_rules: Vec<ReactionRule>,

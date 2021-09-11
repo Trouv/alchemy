@@ -3,6 +3,7 @@ use bevy::{core::FixedTimestep, prelude::*};
 
 pub mod components;
 pub mod compounds;
+pub mod resources;
 pub mod systems;
 pub mod transitions;
 
@@ -12,6 +13,7 @@ impl Plugin for BrewingPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_system_set(
             SystemSet::on_enter(AppState::Brewing)
+                .with_system(resources::load_reaction_rules.system())
                 .with_system(transitions::spawn_test_compounds.system())
                 .with_system(transitions::spawn_cauldron.system())
                 .with_system(transitions::spawn_rank_display.system())
