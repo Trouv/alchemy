@@ -1,4 +1,4 @@
-use crate::alchemy::{brewing::*, components::*, compounds::Compound};
+use crate::alchemy::{components::*, compounds::Compound};
 use bevy::prelude::*;
 use std::str::FromStr;
 
