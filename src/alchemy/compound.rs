@@ -5,25 +5,12 @@ use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, convert::TryFrom, fmt, str::FromStr};
 use thiserror::Error;
 
-const COMPOUND_WEIGHT: u32 = 7;
+type ElementCounts = HashMap<Element, u32>;
 
-#[derive(Error, Debug, PartialEq)]
-pub enum CompoundError {
-    #[error("invalid alton count in compound: {size}")]
-    SizeError { size: u32 },
-    #[error("failed to parse compound")]
-    ParseError,
-}
-
-impl AltonWeighable for HashMap<Element, u32> {
+impl AltonWeighable for ElementCounts {
     fn weight(&self) -> u32 {
         self.iter().map(|(e, v)| e.weight() * v).sum()
     }
-}
-
-#[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
-pub struct Compound {
-    element_counts: HashMap<Element, u32>,
 }
 
 fn element_count_parser(element: Element) -> impl Fn(&str) -> IResult<&str, (Element, u32)> {
@@ -34,7 +21,7 @@ fn element_count_parser(element: Element) -> impl Fn(&str) -> IResult<&str, (Ele
     }
 }
 
-fn element_counts_parser(input: &str) -> IResult<&str, HashMap<Element, u32>> {
+fn element_counts_parser(input: &str) -> IResult<&str, ElementCounts> {
     let (input, opt_a) = combinator::opt(element_count_parser(Element::A))(input)?;
     let (input, opt_b) = combinator::opt(element_count_parser(Element::B))(input)?;
     let (input, opt_c) = combinator::opt(element_count_parser(Element::C))(input)?;
@@ -45,8 +32,23 @@ fn element_counts_parser(input: &str) -> IResult<&str, HashMap<Element, u32>> {
         vec![opt_a, opt_b, opt_c, opt_d, opt_e]
             .into_iter()
             .flatten()
-            .collect::<HashMap<Element, u32>>(),
+            .collect(),
     ))
+}
+
+const COMPOUND_WEIGHT: u32 = 7;
+
+#[derive(Error, Debug, PartialEq)]
+pub enum CompoundError {
+    #[error("invalid alton count in compound: {size}")]
+    SizeError { size: u32 },
+    #[error("failed to parse compound")]
+    ParseError,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
+pub struct Compound {
+    element_counts: ElementCounts,
 }
 
 impl fmt::Display for Compound {
@@ -86,10 +88,10 @@ impl FromStr for Compound {
 
 /// All public constructors of Compound should just call this, since it's directly tied to the
 /// internal data structure, and performs the necessary validation.
-impl TryFrom<HashMap<Element, u32>> for Compound {
+impl TryFrom<ElementCounts> for Compound {
     type Error = CompoundError;
 
-    fn try_from(element_counts: HashMap<Element, u32>) -> Result<Compound, Self::Error> {
+    fn try_from(element_counts: ElementCounts) -> Result<Compound, Self::Error> {
         let mut result = Compound { element_counts };
 
         result.clean();
@@ -107,6 +109,70 @@ impl TryFrom<HashMap<Element, u32>> for Compound {
 impl AltonWeighable for Compound {
     fn weight(&self) -> u32 {
         self.element_counts.weight()
+    }
+}
+
+/// Create a list of all possible rearrangements of elements in two element counts, so the
+/// resulting element_counts meet a desired weight.
+/// This is meant to be called recursively.
+/// Intended for the reaction logic of compounds, but supports other `desired_weight`s just in case.
+///
+/// Assumes that `total_element_counts.weight()` is double the weight of `left_element_counts` and
+/// `right_element_counts`.
+fn enumerate_possible_element_rearrangements(
+    total_element_counts: &ElementCounts,
+    left_element_counts: ElementCounts,
+    right_element_counts: ElementCounts,
+    desired_weight: u32,
+) -> Vec<(ElementCounts, ElementCounts)> {
+    if left_element_counts.weight() > COMPOUND_WEIGHT
+        || right_element_counts.weight() > COMPOUND_WEIGHT
+    {
+        // The selected reaction is invalid
+        Vec::new()
+    } else if total_element_counts.weight() == 0 {
+        // The selected reaction is valid and complete
+        // This assumes that self's and other's weight are COMPOUND_WEIGHT,
+        // which they should be, since the public constructers ensure it.
+        vec![(left_element_counts, right_element_counts)]
+    } else {
+        // We need to pick an element to subtract from the total_element_counts
+        // and add to one of the new compounds for the next step of recursion.
+        // We just pick the first (nonzero) in .into_iter() since order shouldn't matter
+        let (selected_element, selected_element_count) = total_element_counts
+            .clone()
+            .into_iter()
+            .filter(|(_, v)| *v > 0)
+            .next()
+            .expect("We've already checked for an empty total_element_counts");
+
+        // Cloning to do this subtraction immutably,
+        // not sure this is totally necessary.
+        let mut new_total_element_counts = total_element_counts.clone();
+        new_total_element_counts.insert(selected_element, selected_element_count - 1);
+
+        // Create the new Compounds with the added element
+        let mut left_insert = left_element_counts.clone();
+        *left_insert.entry(selected_element).or_insert(0) += 1;
+        let mut right_insert = right_element_counts.clone();
+        *right_insert.entry(selected_element).or_insert(0) += 1;
+
+        // Recurse with both possible additions
+        let mut possible_reactions = Vec::new();
+        possible_reactions.append(&mut enumerate_possible_element_rearrangements(
+            &new_total_element_counts,
+            left_insert,
+            right_element_counts,
+            desired_weight,
+        ));
+        possible_reactions.append(&mut enumerate_possible_element_rearrangements(
+            &new_total_element_counts,
+            left_element_counts,
+            right_insert,
+            desired_weight,
+        ));
+
+        possible_reactions
     }
 }
 
@@ -139,7 +205,7 @@ impl Compound {
             .clone()
             .into_iter()
             .filter(|(_, v)| *v != 0)
-            .collect::<HashMap<Element, u32>>();
+            .collect::<ElementCounts>();
     }
 
     pub fn react(&mut self, other: &mut Compound) {
@@ -154,62 +220,12 @@ impl Compound {
             .map(|(e, v)| *total_element_counts.entry(e).or_insert(0) += v)
             .for_each(drop);
 
-        fn enumerate_possible_reactions(
-            total_element_counts: &HashMap<Element, u32>,
-            left_element_counts: HashMap<Element, u32>,
-            right_element_counts: HashMap<Element, u32>,
-        ) -> Vec<(HashMap<Element, u32>, HashMap<Element, u32>)> {
-            if left_element_counts.weight() > COMPOUND_WEIGHT
-                || right_element_counts.weight() > COMPOUND_WEIGHT
-            {
-                // The selected reaction is invalid
-                Vec::new()
-            } else if total_element_counts.weight() == 0 {
-                // The selected reaction is valid and complete
-                // This assumes that self's and other's weight are COMPOUND_WEIGHT,
-                // which they should be, since the public constructers ensure it.
-                vec![(left_element_counts, right_element_counts)]
-            } else {
-                // We need to pick an element to subtract from the total_element_counts
-                // and add to one of the new compounds for the next step of recursion.
-                // We just pick the first (nonzero) in .into_iter() since order shouldn't matter
-                let (selected_element, selected_element_count) = total_element_counts
-                    .clone()
-                    .into_iter()
-                    .filter(|(_, v)| *v > 0)
-                    .next()
-                    .expect("We've already checked for an empty total_element_counts");
-
-                // Cloning to do this subtraction immutably,
-                // not sure this is totally necessary.
-                let mut new_total_element_counts = total_element_counts.clone();
-                new_total_element_counts.insert(selected_element, selected_element_count - 1);
-
-                // Create the new Compounds with the added element
-                let mut left_insert = left_element_counts.clone();
-                *left_insert.entry(selected_element).or_insert(0) += 1;
-                let mut right_insert = right_element_counts.clone();
-                *right_insert.entry(selected_element).or_insert(0) += 1;
-
-                // Recurse with both possible additions
-                let mut possible_reactions = Vec::new();
-                possible_reactions.append(&mut enumerate_possible_reactions(
-                    &new_total_element_counts,
-                    left_insert,
-                    right_element_counts,
-                ));
-                possible_reactions.append(&mut enumerate_possible_reactions(
-                    &new_total_element_counts,
-                    left_element_counts,
-                    right_insert,
-                ));
-
-                possible_reactions
-            }
-        }
-
-        let possible_reactions =
-            enumerate_possible_reactions(&total_element_counts, HashMap::new(), HashMap::new());
+        let possible_reactions = enumerate_possible_element_rearrangements(
+            &total_element_counts,
+            HashMap::new(),
+            HashMap::new(),
+            COMPOUND_WEIGHT,
+        );
 
         let (self_reaction, other_reaction) = possible_reactions
             .choose(&mut rand::thread_rng())
