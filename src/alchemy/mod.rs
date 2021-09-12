@@ -3,6 +3,7 @@ use bevy::{core::FixedTimestep, prelude::*};
 
 pub mod components;
 pub mod compounds;
+mod element;
 pub mod resources;
 pub mod systems;
 pub mod transitions;
@@ -30,4 +31,8 @@ impl Plugin for BrewingPlugin {
                 .with_system(systems::reaction_test_input.system()),
         );
     }
+}
+
+trait AltonWeighable {
+    fn weight(&self) -> u32;
 }

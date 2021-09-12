@@ -4,10 +4,10 @@ use std::str::FromStr;
 
 pub fn spawn_test_compounds(mut commands: Commands) {
     for _ in 0..20 {
-        commands.spawn().insert(Compound::from_str("2abc").unwrap());
+        commands.spawn().insert(Compound::from_str("a3b").unwrap());
     }
     for _ in 0..30 {
-        commands.spawn().insert(Compound::from_str("cd").unwrap());
+        commands.spawn().insert(Compound::from_str("7a").unwrap());
     }
     for _ in 0..30 {
         commands.spawn().insert(Compound::from_str("be").unwrap());
