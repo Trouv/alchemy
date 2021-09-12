@@ -1,4 +1,4 @@
-use crate::alchemy::{components::*, compounds::Compound, resources::ReactionRule};
+use crate::alchemy::{components::*, compound::Compound, resources::ReactionRule};
 use bevy::prelude::*;
 use rand::Rng;
 use std::{cmp::Ordering, collections::HashMap};

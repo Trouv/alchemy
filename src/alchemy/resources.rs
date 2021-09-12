@@ -1,4 +1,4 @@
-use crate::alchemy::{components::*, compounds::Compound};
+use crate::alchemy::{components::*, compound::Compound};
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};

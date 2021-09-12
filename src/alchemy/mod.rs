@@ -2,7 +2,7 @@ use crate::AppState;
 use bevy::{core::FixedTimestep, prelude::*};
 
 pub mod components;
-pub mod compounds;
+pub mod compound;
 mod element;
 pub mod resources;
 pub mod systems;
