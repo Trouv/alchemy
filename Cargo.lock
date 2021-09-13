@@ -55,19 +55,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "alchemy"
-version = "0.1.0"
-dependencies = [
- "bevy",
- "nom 7.0.0",
- "rand",
- "serde",
- "serde_json",
- "serde_with",
- "thiserror",
-]
-
-[[package]]
 name = "alsa"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3554,6 +3541,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5d129932f4644ac2396cb456385cbf9e63b5b30c6e8dc4820bdca4eb082037a5"
 dependencies = [
  "winapi 0.3.9",
+]
+
+[[package]]
+name = "witchcraft"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "nom 7.0.0",
+ "rand",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "thiserror",
 ]
 
 [[package]]

@@ -1,11 +1,5 @@
-pub mod alchemy;
-
 use bevy::prelude::*;
-
-#[derive(Copy, Clone, Eq, PartialEq, Debug, Hash)]
-pub enum AppState {
-    Brewing,
-}
+use witchcraft::*;
 
 fn main() {
     App::build()
