@@ -132,6 +132,11 @@ impl Compound {
         other.clean();
     }
 
+    /// Leverages `alchemy::element::element_rearrangements_of_equal_weight()` to list all possible
+    /// reactions between two compounds.
+    ///
+    /// This is not used in `react()`, which prefers to `Compound::try_from(ElementCounts)` only
+    /// once, after a rearrangement is randomly selected.
     pub fn list_possible_reactions(&self, other: &Compound) -> Vec<(Compound, Compound)> {
         element_rearrangements_of_equal_weight(&self.element_counts, &other.element_counts)
             .into_iter()

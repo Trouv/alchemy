@@ -109,6 +109,8 @@ fn add_element_counts(
 /// resulting `ElementCounts` have equal weight.
 /// This is meant to be called recursively.
 /// Intended for the reaction logic of compounds
+///
+/// If given two `ElementCounts` with an odd total weight, the resulting list will be empty.
 pub fn element_rearrangements_of_equal_weight(
     left_element_counts: &ElementCounts,
     right_element_counts: &ElementCounts,
@@ -122,12 +124,12 @@ pub fn element_rearrangements_of_equal_weight(
         if left_element_counts.weight() > desired_weight
             || right_element_counts.weight() > desired_weight
         {
-            // The selected reaction is invalid
+            // The selected rearrangement is invalid
             Vec::new()
         } else if total_element_counts.weight() == 0 {
-            // The selected reaction is valid and complete
-            // This assumes that self's and other's weight are COMPOUND_WEIGHT,
-            // which they should be, since the public constructers ensure it.
+            // The selected rearrangement is valid.
+            // We know this because neither element_counts exceed the desired_weight,
+            // despite the fact that all elements have been redistributed.
             vec![(left_element_counts, right_element_counts)]
         } else {
             // We need to pick an element to subtract from the total_element_counts
@@ -145,13 +147,13 @@ pub fn element_rearrangements_of_equal_weight(
             let mut new_total_element_counts = total_element_counts.clone();
             new_total_element_counts.insert(selected_element, selected_element_count - 1);
 
-            // Create the new Compounds with the added element
+            // Create the new ElementCounts with the added element
             let mut left_insert = left_element_counts.clone();
             *left_insert.entry(selected_element).or_insert(0) += 1;
             let mut right_insert = right_element_counts.clone();
             *right_insert.entry(selected_element).or_insert(0) += 1;
 
-            // Recurse with both possible additions
+            // Recurse with both possible redistributions
             let mut possible_reactions = Vec::new();
             possible_reactions.append(&mut recurse(
                 &new_total_element_counts,
