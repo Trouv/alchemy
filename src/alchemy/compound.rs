@@ -1,4 +1,4 @@
-use crate::alchemy::{element::*, AltonWeighable};
+use crate::alchemy::{element::*, element_counts::*, AltonWeighable};
 use nom::combinator;
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};

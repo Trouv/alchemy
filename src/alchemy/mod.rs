@@ -4,6 +4,7 @@ use bevy::{core::FixedTimestep, prelude::*};
 pub mod components;
 pub mod compound;
 mod element;
+mod element_counts;
 pub mod resources;
 pub mod systems;
 pub mod transitions;
