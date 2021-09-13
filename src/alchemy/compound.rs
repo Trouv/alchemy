@@ -2,7 +2,12 @@ use crate::alchemy::{element::*, AltonWeighable};
 use nom::combinator;
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, convert::TryFrom, fmt, str::FromStr};
+use std::{
+    collections::HashMap,
+    convert::{TryFrom, TryInto},
+    fmt,
+    str::FromStr,
+};
 use thiserror::Error;
 
 const COMPOUND_WEIGHT: u32 = 7;
@@ -126,6 +131,22 @@ impl Compound {
         self.clean();
         other.clean();
     }
+
+    pub fn list_possible_reactions(&self, other: &Compound) -> Vec<(Compound, Compound)> {
+        element_rearrangements_of_equal_weight(&self.element_counts, &other.element_counts)
+            .into_iter()
+            .map(|(left_ec, right_ec)| {
+                (
+                    left_ec
+                        .try_into()
+                        .expect("All possible reactions should be valid"),
+                    right_ec
+                        .try_into()
+                        .expect("All possible reactions should be valid"),
+                )
+            })
+            .collect()
+    }
 }
 
 #[cfg(test)]
@@ -248,5 +269,32 @@ mod tests {
             Compound::from_str("acd"),
             Err(CompoundError::SizeError { size: 8 })
         );
+    }
+
+    #[test]
+    fn test_list_possible_reactions() -> Result<(), CompoundError> {
+        let left_compound: Compound = "2ae".parse()?;
+        let right_compound: Compound = "a3b".parse()?;
+
+        let possible_reactions = left_compound.list_possible_reactions(&right_compound);
+
+        assert_eq!(
+            true,
+            possible_reactions.contains(&("2ae".parse()?, "a3b".parse()?))
+        );
+        assert_eq!(
+            true,
+            possible_reactions.contains(&("be".parse()?, "3a2b".parse()?))
+        );
+        assert_ne!(
+            true,
+            possible_reactions.contains(&("2ae".parse()?, "3a2b".parse()?))
+        );
+        assert_ne!(
+            true,
+            possible_reactions.contains(&("a2c".parse()?, "cd".parse()?))
+        );
+
+        Ok(())
     }
 }
