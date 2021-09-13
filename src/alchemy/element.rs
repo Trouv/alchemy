@@ -110,7 +110,7 @@ fn add_element_counts(
 /// This is meant to be called recursively.
 /// Intended for the reaction logic of compounds
 ///
-/// If given two `ElementCounts` with an odd total weight, the resulting list will be empty.
+/// If the elements can't be redistributed to the desired weight, the resulting list will be empty.
 pub fn element_rearrangements_of_equal_weight(
     left_element_counts: &ElementCounts,
     right_element_counts: &ElementCounts,
@@ -180,4 +180,40 @@ pub fn element_rearrangements_of_equal_weight(
         HashMap::new(),
         total_element_counts.weight() / 2,
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_impossible_element_rearrangements_give_empty_list() {
+        let mut left_element_counts: ElementCounts = HashMap::new();
+        let mut right_element_counts: ElementCounts = HashMap::new();
+
+        left_element_counts.insert(Element::C, 5);
+        right_element_counts.insert(Element::B, 2);
+        assert_eq!(
+            Vec::<(ElementCounts, ElementCounts)>::new(),
+            element_rearrangements_of_equal_weight(&left_element_counts, &right_element_counts)
+        );
+
+        left_element_counts.clear();
+        right_element_counts.clear();
+        left_element_counts.insert(Element::A, 1);
+        assert_eq!(
+            Vec::<(ElementCounts, ElementCounts)>::new(),
+            element_rearrangements_of_equal_weight(&left_element_counts, &right_element_counts)
+        );
+
+        // The total weight doesn't have to be odd to be impossible
+        left_element_counts.clear();
+        right_element_counts.clear();
+        left_element_counts.insert(Element::C, 5);
+        right_element_counts.insert(Element::E, 1);
+        assert_eq!(
+            Vec::<(ElementCounts, ElementCounts)>::new(),
+            element_rearrangements_of_equal_weight(&left_element_counts, &right_element_counts)
+        );
+    }
 }
