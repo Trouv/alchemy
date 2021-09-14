@@ -1,7 +1,6 @@
 use crate::alchemy::{components::*, compound::Compound, resources::ReactionRule};
 use bevy::prelude::*;
 use rand::Rng;
-use std::{cmp::Ordering, collections::HashMap};
 
 fn get_reactive_compounds(
     reaction_rules: Vec<ReactionRule>,
@@ -48,67 +47,6 @@ pub fn brewing(
             (colliding_compounds.next(), colliding_compounds.next())
         {
             left.react(&mut right);
-        }
-    }
-}
-
-pub fn compound_rank_display(
-    compound_query: Query<&Compound>,
-    mut rank_display_query: Query<&mut Text, With<RankDisplayer>>,
-) {
-    for mut rank_text in rank_display_query.iter_mut() {
-        let mut compound_counter: HashMap<String, u32> = HashMap::new();
-        for compound in compound_query.iter() {
-            *compound_counter.entry(compound.to_string()).or_insert(0) += 1;
-        }
-
-        let mut compound_counts = compound_counter.into_iter().collect::<Vec<(String, u32)>>();
-        compound_counts.sort_by(|(s1, v1), (s2, v2)| match v1.cmp(v2) {
-            Ordering::Equal => s1.cmp(s2),
-            other => other,
-        });
-        compound_counts.reverse();
-
-        let mut result = "".to_string();
-        compound_counts
-            .into_iter()
-            .map(|(s, v)| result = format!("{}{} - {}\n", result, v, s))
-            .for_each(drop);
-
-        rank_text.sections[0].value = result;
-    }
-}
-
-pub fn reaction_test_input(
-    mut cauldron_query: Query<(Entity, Option<&mut Heat>, &mut StirMethod), With<Cauldron>>,
-    mut commands: Commands,
-    input: Res<Input<KeyCode>>,
-) {
-    if let Some((entity, heat, mut stir_method)) = cauldron_query.iter_mut().next() {
-        if input.just_pressed(KeyCode::Key0) {
-            *stir_method = StirMethod::ZeroStir;
-        } else if input.just_pressed(KeyCode::Key1) {
-            *stir_method = StirMethod::SingleStir;
-        } else if input.just_pressed(KeyCode::Key2) {
-            *stir_method = StirMethod::DoubleStir;
-        } else if input.just_pressed(KeyCode::Key4) {
-            *stir_method = StirMethod::QuadrupleStir;
-        }
-
-        if input.pressed(KeyCode::B) {
-            if let Some(mut heat) = heat {
-                *heat = Heat::Boiling;
-            } else {
-                commands.entity(entity).insert(Heat::Boiling);
-            }
-        } else if input.pressed(KeyCode::S) {
-            if let Some(mut heat) = heat {
-                *heat = Heat::Simmering;
-            } else {
-                commands.entity(entity).insert(Heat::Simmering);
-            }
-        } else if heat.is_some() {
-            commands.entity(entity).remove::<Heat>();
         }
     }
 }
