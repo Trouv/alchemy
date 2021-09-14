@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
     convert::{TryFrom, TryInto},
-    fmt,
+    fmt, hash,
     str::FromStr,
 };
 use thiserror::Error;
@@ -46,6 +46,12 @@ impl fmt::Display for Compound {
                 })
                 .collect::<String>()
         )
+    }
+}
+
+impl hash::Hash for Compound {
+    fn hash<H: hash::Hasher>(&self, state: &mut H) {
+        self.to_string().hash(state);
     }
 }
 
