@@ -2,8 +2,8 @@ use crate::alchemy::{components::*, compound::Compound, resources::ReactionRule}
 use bevy::prelude::*;
 use rand::Rng;
 
-fn get_reactive_compounds(
-    reaction_rules: Vec<ReactionRule>,
+pub fn get_reactive_compounds(
+    reaction_rules: &Vec<ReactionRule>,
     stir_method: StirMethod,
     heat: Heat,
 ) -> Vec<Compound> {
@@ -34,8 +34,7 @@ pub fn brewing(
     reaction_rules: Res<Vec<ReactionRule>>,
 ) {
     if let Some((heat, stir_method)) = cauldron_query.iter().next() {
-        let reactive_compounds =
-            get_reactive_compounds(reaction_rules.clone(), *stir_method, *heat);
+        let reactive_compounds = get_reactive_compounds(&reaction_rules, *stir_method, *heat);
 
         let mut rng = rand::thread_rng();
         let mut colliding_compounds = compound_query

@@ -15,10 +15,16 @@ serde_with = "1.9"
 rand = "0.8"
 nom = "7.0"
 thiserror = "1.0"
+csv = "1.1"
+strum = { version = "0.21", features = ["derive"] }
 
 [features]
 dev = []
 
 [[bin]]
 name = "cauldron"
+required-features = ["dev"]
+
+[[bin]]
+name = "reactable"
 required-features = ["dev"]

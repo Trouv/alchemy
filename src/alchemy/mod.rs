@@ -14,7 +14,7 @@ pub struct BrewingPlugin;
 
 impl Plugin for BrewingPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_startup_system(resources::load_reaction_rules.system())
+        app.add_startup_system(resources::insert_reaction_rules.system())
             .add_system_set(
                 SystemSet::on_update(AppState::Brewing)
                     .with_run_criteria(FixedTimestep::step(0.1))

@@ -2,7 +2,7 @@ use crate::alchemy::{components::*, compound::Compound};
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
-use std::fs;
+use std::{fs, io};
 
 #[serde_as]
 #[derive(Clone, Eq, PartialEq, Debug, Default, Serialize, Deserialize)]
@@ -15,8 +15,11 @@ pub struct ReactionRule {
     pub stir_method: Option<StirMethod>,
 }
 
-pub fn load_reaction_rules(mut commands: Commands) {
-    let data = fs::read_to_string("assets/design/reaction_rules.json").unwrap();
-    let reaction_rules: Vec<ReactionRule> = serde_json::from_str(&data).unwrap();
-    commands.insert_resource(reaction_rules)
+pub fn load_reaction_rules() -> io::Result<Vec<ReactionRule>> {
+    let data = fs::read_to_string("assets/design/reaction_rules.json")?;
+    Ok(serde_json::from_str(&data)?)
+}
+
+pub fn insert_reaction_rules(mut commands: Commands) {
+    commands.insert_resource(load_reaction_rules().expect("Failed to load reaction rules"))
 }
