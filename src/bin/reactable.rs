@@ -8,14 +8,10 @@ fn main() -> io::Result<()> {
         compound: row_compound,
         stir_method,
         heat,
-    } in reaction_rules
+    } in &reaction_rules
     {
-        let reactive_compounds = match (stir_method, heat) {
-            (Some(sm), Some(h)) => alchemy::systems::get_reactive_compounds(&reaction_rules, sm, h),
-            (Some(sm), None) => vec![],
-            (None, Some(sm)) => vec![],
-            (None, None) => vec![],
-        };
+        let reactive_compounds =
+            alchemy::systems::get_reactive_compounds(&reaction_rules, *stir_method, *heat);
 
         let mut row = vec![row_compound.to_string()];
     }

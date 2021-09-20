@@ -1,14 +1,15 @@
 use serde::{Deserialize, Serialize};
+use strum::EnumIter;
 
 /// Heat may or may not be present on a Cauldron,
 /// If it's not present, no reaction should occur.
-#[derive(Copy, Clone, Eq, PartialEq, Debug, Hash, Serialize, Deserialize)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Hash, Serialize, Deserialize, EnumIter)]
 pub enum Heat {
     Simmering,
     Boiling,
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Debug, Hash, Serialize, Deserialize)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Hash, Serialize, Deserialize, EnumIter)]
 pub enum StirMethod {
     /// As opposed to Heat, reactions may occur when there's no stirring,
     /// represented by this variant.

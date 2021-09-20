@@ -2,22 +2,36 @@ use crate::alchemy::{components::*, compound::Compound, resources::ReactionRule}
 use bevy::prelude::*;
 use rand::Rng;
 
+/// Get all compounds that react under the given criteria according to the reaction rules.
+/// `stir_method` and `heat` are optional,
+/// where None means there is no requirement for that criteria.
+/// For example, `stir_method=None` will only filter out compounds based on heat criteria.
 pub fn get_reactive_compounds(
     reaction_rules: &Vec<ReactionRule>,
-    stir_method: StirMethod,
-    heat: Heat,
+    stir_method: Option<StirMethod>,
+    heat: Option<Heat>,
 ) -> Vec<Compound> {
     reaction_rules
         .clone()
         .into_iter()
         .filter(|rule| {
-            (match rule.heat {
-                Some(h) => h == heat,
+            // Rustfmt seems to convert &&s between match objects to double references.
+            // So unfortunately using lets here.
+            let stir_match = match stir_method {
+                Some(sm) => match rule.stir_method {
+                    Some(rule_sm) => sm == rule_sm,
+                    None => true,
+                },
                 None => true,
-            }) && (match rule.stir_method {
-                Some(sm) => sm == stir_method,
+            };
+            let heat_match = match heat {
+                Some(h) => match rule.heat {
+                    Some(rule_h) => h == rule_h,
+                    None => true,
+                },
                 None => true,
-            })
+            };
+            stir_match && heat_match
         })
         .map(|rule| rule.compound)
         .collect::<Vec<Compound>>()
@@ -34,7 +48,8 @@ pub fn brewing(
     reaction_rules: Res<Vec<ReactionRule>>,
 ) {
     if let Some((heat, stir_method)) = cauldron_query.iter().next() {
-        let reactive_compounds = get_reactive_compounds(&reaction_rules, *stir_method, *heat);
+        let reactive_compounds =
+            get_reactive_compounds(&reaction_rules, Some(*stir_method), Some(*heat));
 
         let mut rng = rand::thread_rng();
         let mut colliding_compounds = compound_query
