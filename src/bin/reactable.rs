@@ -1,8 +1,19 @@
-use std::io;
+use csv::Writer;
+use std::{env, io};
 use witchcraft::*;
 
 fn main() -> io::Result<()> {
+    let args: Vec<String> = env::args().collect();
+    let anarchy = args.contains(&"--anarchy".to_string()) || args.contains(&"-a".to_string());
     let reaction_rules = alchemy::resources::load_reaction_rules()?;
+    let mut writer = Writer::from_writer(io::stdout());
+
+    let mut first_row = vec!["".to_string()];
+    for alchemy::resources::ReactionRule { compound, .. } in &reaction_rules {
+        first_row.push(compound.to_string())
+    }
+
+    writer.write_record(first_row)?;
 
     for alchemy::resources::ReactionRule {
         compound: row_compound,
@@ -20,7 +31,7 @@ fn main() -> io::Result<()> {
             ..
         } in &reaction_rules
         {
-            if reactive_compounds.contains(col_compound) {
+            if reactive_compounds.contains(col_compound) || anarchy {
                 row.push(
                     row_compound
                         .list_possible_reactions(col_compound)
@@ -33,6 +44,10 @@ fn main() -> io::Result<()> {
                 row.push("".to_string())
             }
         }
+        writer.write_record(row)?;
     }
+
+    writer.flush()?;
+
     Ok(())
 }
