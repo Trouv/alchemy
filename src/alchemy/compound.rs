@@ -3,7 +3,7 @@ use nom::combinator;
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     convert::{TryFrom, TryInto},
     fmt, hash,
     str::FromStr,
@@ -143,7 +143,7 @@ impl Compound {
     ///
     /// This is not used in `react()`, which prefers to `Compound::try_from(ElementCounts)` only
     /// once, after a rearrangement is randomly selected.
-    pub fn list_possible_reactions(&self, other: &Compound) -> Vec<(Compound, Compound)> {
+    pub fn set_of_possible_reactions(&self, other: &Compound) -> HashSet<(Compound, Compound)> {
         element_rearrangements_of_equal_weight(&self.element_counts, &other.element_counts)
             .into_iter()
             .map(|(left_ec, right_ec)| {
@@ -287,7 +287,7 @@ mod tests {
         let left_compound: Compound = "2ae".parse()?;
         let right_compound: Compound = "a3b".parse()?;
 
-        let possible_reactions = left_compound.list_possible_reactions(&right_compound);
+        let possible_reactions = left_compound.set_of_possible_reactions(&right_compound);
 
         assert_eq!(
             true,

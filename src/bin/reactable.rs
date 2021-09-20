@@ -34,7 +34,7 @@ fn main() -> io::Result<()> {
             if reactive_compounds.contains(col_compound) || anarchy {
                 row.push(
                     row_compound
-                        .list_possible_reactions(col_compound)
+                        .set_of_possible_reactions(col_compound)
                         .into_iter()
                         .map(|(left, right)| format!("{}+{}", left, right))
                         .collect::<Vec<String>>()
