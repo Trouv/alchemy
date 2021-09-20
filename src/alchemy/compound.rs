@@ -144,19 +144,30 @@ impl Compound {
     /// This is not used in `react()`, which prefers to `Compound::try_from(ElementCounts)` only
     /// once, after a rearrangement is randomly selected.
     pub fn set_of_possible_reactions(&self, other: &Compound) -> HashSet<(Compound, Compound)> {
-        element_rearrangements_of_equal_weight(&self.element_counts, &other.element_counts)
-            .into_iter()
-            .map(|(left_ec, right_ec)| {
-                (
-                    left_ec
-                        .try_into()
-                        .expect("All possible reactions should be valid"),
-                    right_ec
-                        .try_into()
-                        .expect("All possible reactions should be valid"),
-                )
-            })
-            .collect()
+        let set_with_inverses: HashSet<(Compound, Compound)> =
+            element_rearrangements_of_equal_weight(&self.element_counts, &other.element_counts)
+                .into_iter()
+                .map(|(left_ec, right_ec)| {
+                    (
+                        left_ec
+                            .try_into()
+                            .expect("All possible reactions should be valid"),
+                        right_ec
+                            .try_into()
+                            .expect("All possible reactions should be valid"),
+                    )
+                })
+                .collect();
+        let mut result = HashSet::new();
+        for (left, right) in set_with_inverses.into_iter() {
+            if !result.contains(&(right.clone(), left.clone()))
+                && !(left == *self && right == *other)
+                && !(right == *self && left == *other)
+            {
+                result.insert((left, right));
+            }
+        }
+        result
     }
 }
 
