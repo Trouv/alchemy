@@ -2,9 +2,11 @@ use crate::alchemy::{element::*, AltonWeighable};
 use nom::{character::complete, combinator, IResult};
 use std::collections::HashMap;
 
-pub type ElementCounts = HashMap<Element, u32>;
+pub struct ElementCounts<const W: u32> {
+    map: HashMap<Element, u32>,
+}
 
-impl AltonWeighable for ElementCounts {
+impl<const W: u32> AltonWeighable for ElementCounts<W> {
     fn weight(&self) -> u32 {
         self.iter().map(|(e, v)| e.weight() * v).sum()
     }
@@ -18,7 +20,7 @@ pub fn element_count_parser(element: Element) -> impl Fn(&str) -> IResult<&str, 
     }
 }
 
-pub fn element_counts_parser(input: &str) -> IResult<&str, ElementCounts> {
+pub fn element_counts_parser<const W: u32>(input: &str) -> IResult<&str, ElementCounts<W>> {
     let (input, opt_a) = combinator::opt(element_count_parser(Element::A))(input)?;
     let (input, opt_b) = combinator::opt(element_count_parser(Element::B))(input)?;
     let (input, opt_c) = combinator::opt(element_count_parser(Element::C))(input)?;
@@ -33,10 +35,10 @@ pub fn element_counts_parser(input: &str) -> IResult<&str, ElementCounts> {
     ))
 }
 
-fn add_element_counts(
-    left_element_counts: &ElementCounts,
-    right_element_counts: &ElementCounts,
-) -> ElementCounts {
+fn add_element_counts<const W: u32, const X: u32>(
+    left_element_counts: &ElementCounts<W>,
+    right_element_counts: &ElementCounts<X>,
+) -> HashMap<Element, u32> {
     let mut total_element_counts = left_element_counts.clone();
     right_element_counts
         .clone()
@@ -53,16 +55,16 @@ fn add_element_counts(
 /// Intended for the reaction logic of compounds
 ///
 /// If the elements can't be redistributed to the desired weight, the resulting list will be empty.
-pub fn element_rearrangements_of_equal_weight(
-    left_element_counts: &ElementCounts,
-    right_element_counts: &ElementCounts,
-) -> Vec<(ElementCounts, ElementCounts)> {
-    fn recurse(
-        total_element_counts: &ElementCounts,
-        left_element_counts: ElementCounts,
-        right_element_counts: ElementCounts,
+pub fn element_rearrangements_of_equal_weight<const W: u32>(
+    left_element_counts: &ElementCounts<W>,
+    right_element_counts: &ElementCounts<W>,
+) -> Vec<(ElementCounts<W>, ElementCounts<W>)> {
+    fn recurse<const W: u32>(
+        total_element_counts: &HashMap<Element, u32>,
+        left_element_counts: HashMap<Element, u32>,
+        right_element_counts: HashMap<Element, u32>,
         desired_weight: u32,
-    ) -> Vec<(ElementCounts, ElementCounts)> {
+    ) -> Vec<(ElementCounts<W>, ElementCounts<W>)> {
         if left_element_counts.weight() > desired_weight
             || right_element_counts.weight() > desired_weight
         {
