@@ -1,66 +1,66 @@
 [
 	{
-		"compound": "7a",
+		"compound": "7A",
 		"heat": "Simmering",
 		"stir_method": null
 	},
 	{
-		"compound": "5ab",
+		"compound": "5AB",
 		"heat": "Boiling",
 		"stir_method": null
 	},
 	{
-		"compound": "4ac",
+		"compound": "4AC",
 		"heat": null,
 		"stir_method": "ZeroStir"
 	},
 	{
-		"compound": "3a2b",
+		"compound": "3A2B",
 		"heat": null,
 		"stir_method": "SingleStir"
 	},
 	{
-		"compound": "3ad",
+		"compound": "3AD",
 		"heat": null,
 		"stir_method": "DoubleStir"
 	},
 	{
-		"compound": "2abc",
+		"compound": "2ABC",
 		"heat": "Simmering",
 		"stir_method": "ZeroStir"
 	},
 	{
-		"compound": "a3b",
+		"compound": "A3B",
 		"heat": "Boiling",
 		"stir_method": "ZeroStir"
 	},
 	{
-		"compound": "2bc",
+		"compound": "2BC",
 		"heat": "Simmering",
 		"stir_method": "SingleStir"
 	},
 	{
-		"compound": "2ae",
+		"compound": "2AE",
 		"heat": "Boiling",
 		"stir_method": "SingleStir"
 	},
 	{
-		"compound": "a2c",
+		"compound": "A2C",
 		"heat": "Simmering",
 		"stir_method": "DoubleStir"
 	},
 	{
-		"compound": "abd",
+		"compound": "ABD",
 		"heat": "Boiling",
 		"stir_method": "DoubleStir"
 	},
 	{
-		"compound": "be",
+		"compound": "BE",
 		"heat": "Simmering",
 		"stir_method": "QuadrupleStir"
 	},
 	{
-		"compound": "cd",
+		"compound": "CD",
 		"heat": "Boiling",
 		"stir_method": "QuadrupleStir"
 	}

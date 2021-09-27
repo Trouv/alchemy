@@ -1,10 +1,24 @@
 use crate::alchemy::AltonWeighable;
 use nom::{character::complete, IResult};
 use serde::{Deserialize, Serialize};
-use std::{cmp, fmt};
+use std::cmp;
+use strum::{Display, EnumIter, EnumString};
 
 /// The most basic alchemical object.
-#[derive(Copy, Clone, Eq, PartialEq, PartialOrd, Debug, Hash, Serialize, Deserialize)]
+#[derive(
+    Copy,
+    Clone,
+    Eq,
+    PartialEq,
+    PartialOrd,
+    Debug,
+    Hash,
+    Serialize,
+    Deserialize,
+    Display,
+    EnumIter,
+    EnumString,
+)]
 pub enum Element {
     A,
     B,
@@ -35,22 +49,6 @@ impl AltonWeighable for Element {
             Element::D => 4,
             Element::E => 5,
         }
-    }
-}
-
-impl fmt::Display for Element {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                Element::A => "a",
-                Element::B => "b",
-                Element::C => "c",
-                Element::D => "d",
-                Element::E => "e",
-            }
-        )
     }
 }
 

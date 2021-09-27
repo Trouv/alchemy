@@ -144,30 +144,29 @@ impl Compound {
     /// This is not used in `react()`, which prefers to `Compound::try_from(ElementCounts)` only
     /// once, after a rearrangement is randomly selected.
     pub fn set_of_possible_reactions(&self, other: &Compound) -> HashSet<(Compound, Compound)> {
-        let set_with_inverses: HashSet<(Compound, Compound)> =
-            element_rearrangements_of_equal_weight(&self.element_counts, &other.element_counts)
-                .into_iter()
-                .map(|(left_ec, right_ec)| {
-                    (
-                        left_ec
-                            .try_into()
-                            .expect("All possible reactions should be valid"),
-                        right_ec
-                            .try_into()
-                            .expect("All possible reactions should be valid"),
-                    )
-                })
-                .collect();
-        let mut result = HashSet::new();
-        for (left, right) in set_with_inverses.into_iter() {
-            if !result.contains(&(right.clone(), left.clone()))
-                && !(left == *self && right == *other)
-                && !(right == *self && left == *other)
-            {
-                result.insert((left, right));
-            }
-        }
-        result
+        element_rearrangements_of_equal_weight(&self.element_counts, &other.element_counts)
+            .into_iter()
+            .map(|(left_ec, right_ec)| {
+                (
+                    left_ec
+                        .try_into()
+                        .expect("All possible reactions should be valid"),
+                    right_ec
+                        .try_into()
+                        .expect("All possible reactions should be valid"),
+                )
+            })
+            .collect()
+        //let mut result = HashSet::new();
+        //for (left, right) in set_with_inverses.into_iter() {
+        //if !result.contains(&(right.clone(), left.clone()))
+        //&& !(left == *self && right == *other)
+        //&& !(right == *self && left == *other)
+        //{
+        //result.insert((left, right));
+        //}
+        //}
+        //result
     }
 }
 
@@ -265,15 +264,15 @@ mod tests {
     #[test]
     fn test_compound_parsing() -> Result<(), CompoundError> {
         assert_eq!(
-            Compound::from_str("2abc")?,
+            Compound::from_str("2ABC")?,
             Compound::try_from_element_counts(2, 1, 1, 0, 0)?
         );
         assert_eq!(
-            Compound::from_str("be")?,
+            Compound::from_str("BE")?,
             Compound::try_from_element_counts(0, 1, 0, 0, 1)?
         );
         assert_eq!(
-            Compound::from_str("3a1d")?,
+            Compound::from_str("3A1D")?,
             Compound::try_from_element_counts(3, 0, 0, 1, 0)?
         );
         Ok(())
@@ -281,40 +280,41 @@ mod tests {
 
     #[test]
     fn test_compound_parsing_failures() {
-        assert_eq!(Compound::from_str("d3a"), Err(CompoundError::ParseError));
-        assert_eq!(Compound::from_str("faf"), Err(CompoundError::ParseError));
+        assert_eq!(Compound::from_str("D3A"), Err(CompoundError::ParseError));
+        assert_eq!(Compound::from_str("FAF"), Err(CompoundError::ParseError));
         assert_eq!(
-            Compound::from_str("abc"),
+            Compound::from_str("ABC"),
             Err(CompoundError::SizeError { size: 6 })
         );
         assert_eq!(
-            Compound::from_str("acd"),
+            Compound::from_str("ACD"),
             Err(CompoundError::SizeError { size: 8 })
         );
     }
 
     #[test]
     fn test_list_possible_reactions() -> Result<(), CompoundError> {
-        let left_compound: Compound = "2ae".parse()?;
-        let right_compound: Compound = "a3b".parse()?;
+        let left_compound: Compound = "2AE".parse()?;
+        let right_compound: Compound = "A3B".parse()?;
 
         let possible_reactions = left_compound.set_of_possible_reactions(&right_compound);
+        println!("{:?}", possible_reactions);
 
         assert_eq!(
             true,
-            possible_reactions.contains(&("2ae".parse()?, "a3b".parse()?))
+            possible_reactions.contains(&("2AE".parse()?, "A3B".parse()?))
         );
         assert_eq!(
             true,
-            possible_reactions.contains(&("be".parse()?, "3a2b".parse()?))
+            possible_reactions.contains(&("BE".parse()?, "3A2B".parse()?))
         );
         assert_ne!(
             true,
-            possible_reactions.contains(&("2ae".parse()?, "3a2b".parse()?))
+            possible_reactions.contains(&("2AE".parse()?, "3A2B".parse()?))
         );
         assert_ne!(
             true,
-            possible_reactions.contains(&("a2c".parse()?, "cd".parse()?))
+            possible_reactions.contains(&("A2C".parse()?, "CD".parse()?))
         );
 
         Ok(())
