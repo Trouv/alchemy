@@ -21,11 +21,11 @@ pub enum CompoundError {
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
-pub struct Compound {
+pub struct Compound<const W: u32> {
     element_counts: ElementCounts,
 }
 
-impl fmt::Display for Compound {
+impl<const W: u32> fmt::Display for Compound<W> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut element_count_pairs = self
             .clone()
@@ -49,13 +49,13 @@ impl fmt::Display for Compound {
     }
 }
 
-impl hash::Hash for Compound {
+impl<const W: u32> hash::Hash for Compound<W> {
     fn hash<H: hash::Hasher>(&self, state: &mut H) {
         self.to_string().hash(state);
     }
 }
 
-impl FromStr for Compound {
+impl<const W: u32> FromStr for Compound<W> {
     type Err = CompoundError;
 
     fn from_str(value: &str) -> Result<Self, Self::Err> {
@@ -68,10 +68,10 @@ impl FromStr for Compound {
 
 /// All public constructors of Compound should just call this, since it's directly tied to the
 /// internal data structure, and performs the necessary validation.
-impl TryFrom<ElementCounts> for Compound {
+impl<const W: u32> TryFrom<ElementCounts> for Compound<W> {
     type Error = CompoundError;
 
-    fn try_from(element_counts: ElementCounts) -> Result<Compound, Self::Error> {
+    fn try_from(element_counts: ElementCounts) -> Result<Compound<W>, Self::Error> {
         let mut result = Compound { element_counts };
 
         result.clean();
@@ -86,20 +86,20 @@ impl TryFrom<ElementCounts> for Compound {
     }
 }
 
-impl AltonWeighable for Compound {
+impl<const W: u32> AltonWeighable for Compound<W> {
     fn weight(&self) -> u32 {
         self.element_counts.weight()
     }
 }
 
-impl Compound {
+impl<const W: u32> Compound<W> {
     pub fn try_from_element_counts(
         a: u32,
         b: u32,
         c: u32,
         d: u32,
         e: u32,
-    ) -> Result<Compound, CompoundError> {
+    ) -> Result<Compound<W>, CompoundError> {
         let mut element_counts = HashMap::new();
         element_counts.insert(Element::A, a);
         element_counts.insert(Element::B, b);
@@ -111,7 +111,7 @@ impl Compound {
     }
 
     fn validate(&self) -> bool {
-        self.weight() == COMPOUND_WEIGHT
+        self.weight() == W
     }
 
     /// Remove entries with values equal to 0
@@ -124,7 +124,7 @@ impl Compound {
             .collect::<ElementCounts>();
     }
 
-    pub fn react(&mut self, other: &mut Compound) {
+    pub fn react(&mut self, other: &mut Compound<W>) {
         let possible_reactions =
             element_rearrangements_of_equal_weight(&self.element_counts, &other.element_counts);
 
@@ -143,7 +143,10 @@ impl Compound {
     ///
     /// This is not used in `react()`, which prefers to `Compound::try_from(ElementCounts)` only
     /// once, after a rearrangement is randomly selected.
-    pub fn set_of_possible_reactions(&self, other: &Compound) -> HashSet<(Compound, Compound)> {
+    pub fn set_of_possible_reactions(
+        &self,
+        other: &Compound<W>,
+    ) -> HashSet<(Compound<W>, Compound<W>)> {
         element_rearrangements_of_equal_weight(&self.element_counts, &other.element_counts)
             .into_iter()
             .map(|(left_ec, right_ec)| {
@@ -177,47 +180,47 @@ mod tests {
     #[test]
     fn test_compound_equality() -> Result<(), CompoundError> {
         assert_eq!(
-            Compound::try_from_element_counts(0, 1, 0, 0, 1)?,
-            Compound::try_from_element_counts(0, 1, 0, 0, 1)?
+            Compound::<7>::try_from_element_counts(0, 1, 0, 0, 1)?,
+            Compound::<7>::try_from_element_counts(0, 1, 0, 0, 1)?
         );
         Ok(())
     }
 
     #[test]
     fn test_compound_appropriate_size_ok() -> Result<(), CompoundError> {
-        Compound::try_from_element_counts(7, 0, 0, 0, 0)?;
-        Compound::try_from_element_counts(2, 0, 0, 0, 1)?;
-        Compound::try_from_element_counts(3, 0, 0, 1, 0)?;
-        Compound::try_from_element_counts(0, 0, 1, 1, 0)?;
+        Compound::<7>::try_from_element_counts(7, 0, 0, 0, 0)?;
+        Compound::<7>::try_from_element_counts(2, 0, 0, 0, 1)?;
+        Compound::<7>::try_from_element_counts(3, 0, 0, 1, 0)?;
+        Compound::<7>::try_from_element_counts(0, 0, 1, 1, 0)?;
         Ok(())
     }
 
     #[test]
     fn test_compound_inappropriate_size_fails() {
         assert_eq!(
-            Compound::try_from_element_counts(5, 0, 0, 0, 0),
+            Compound::<7>::try_from_element_counts(5, 0, 0, 0, 0),
             Err(CompoundError::SizeError { size: 5 })
         );
         assert_eq!(
-            Compound::try_from_element_counts(0, 0, 0, 0, 2),
+            Compound::<7>::try_from_element_counts(0, 0, 0, 0, 2),
             Err(CompoundError::SizeError { size: 10 })
         );
         assert_eq!(
-            Compound::try_from_element_counts(0, 1, 1, 1, 0),
+            Compound::<7>::try_from_element_counts(0, 1, 1, 1, 0),
             Err(CompoundError::SizeError { size: 9 })
         );
         assert_eq!(
-            Compound::try_from_element_counts(0, 1, 0, 1, 0),
+            Compound::<7>::try_from_element_counts(0, 1, 0, 1, 0),
             Err(CompoundError::SizeError { size: 6 })
         );
     }
 
     #[test]
     fn test_compound_reaction_validity() -> Result<(), CompoundError> {
-        let mut compound_a = Compound::try_from_element_counts(1, 3, 0, 0, 0)?;
-        let mut compound_b = Compound::try_from_element_counts(2, 1, 1, 0, 0)?;
-        let mut compound_c = Compound::try_from_element_counts(0, 1, 0, 0, 1)?;
-        let mut compound_d = Compound::try_from_element_counts(0, 0, 1, 1, 0)?;
+        let mut compound_a = Compound::<7>::try_from_element_counts(1, 3, 0, 0, 0)?;
+        let mut compound_b = Compound::<7>::try_from_element_counts(2, 1, 1, 0, 0)?;
+        let mut compound_c = Compound::<7>::try_from_element_counts(0, 1, 0, 0, 1)?;
+        let mut compound_d = Compound::<7>::try_from_element_counts(0, 0, 1, 1, 0)?;
 
         println!(
             "{} {} {} {}",
@@ -264,38 +267,44 @@ mod tests {
     #[test]
     fn test_compound_parsing() -> Result<(), CompoundError> {
         assert_eq!(
-            Compound::from_str("2ABC")?,
-            Compound::try_from_element_counts(2, 1, 1, 0, 0)?
+            Compound::<7>::from_str("2ABC")?,
+            Compound::<7>::try_from_element_counts(2, 1, 1, 0, 0)?
         );
         assert_eq!(
-            Compound::from_str("BE")?,
-            Compound::try_from_element_counts(0, 1, 0, 0, 1)?
+            Compound::<7>::from_str("BE")?,
+            Compound::<7>::try_from_element_counts(0, 1, 0, 0, 1)?
         );
         assert_eq!(
-            Compound::from_str("3A1D")?,
-            Compound::try_from_element_counts(3, 0, 0, 1, 0)?
+            Compound::<7>::from_str("3A1D")?,
+            Compound::<7>::try_from_element_counts(3, 0, 0, 1, 0)?
         );
         Ok(())
     }
 
     #[test]
     fn test_compound_parsing_failures() {
-        assert_eq!(Compound::from_str("D3A"), Err(CompoundError::ParseError));
-        assert_eq!(Compound::from_str("FAF"), Err(CompoundError::ParseError));
         assert_eq!(
-            Compound::from_str("ABC"),
+            Compound::<7>::from_str("D3A"),
+            Err(CompoundError::ParseError)
+        );
+        assert_eq!(
+            Compound::<7>::from_str("FAF"),
+            Err(CompoundError::ParseError)
+        );
+        assert_eq!(
+            Compound::<7>::from_str("ABC"),
             Err(CompoundError::SizeError { size: 6 })
         );
         assert_eq!(
-            Compound::from_str("ACD"),
+            Compound::<7>::from_str("ACD"),
             Err(CompoundError::SizeError { size: 8 })
         );
     }
 
     #[test]
     fn test_list_possible_reactions() -> Result<(), CompoundError> {
-        let left_compound: Compound = "2AE".parse()?;
-        let right_compound: Compound = "A3B".parse()?;
+        let left_compound: Compound<7> = "2AE".parse()?;
+        let right_compound: Compound<7> = "A3B".parse()?;
 
         let possible_reactions = left_compound.set_of_possible_reactions(&right_compound);
         println!("{:?}", possible_reactions);

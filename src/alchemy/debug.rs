@@ -28,13 +28,19 @@ mod transitions {
 
     pub fn spawn_test_compounds(mut commands: Commands) {
         for _ in 0..20 {
-            commands.spawn().insert(Compound::from_str("a3b").unwrap());
+            commands
+                .spawn()
+                .insert(Compound::<7>::from_str("a3b").unwrap());
         }
         for _ in 0..30 {
-            commands.spawn().insert(Compound::from_str("7a").unwrap());
+            commands
+                .spawn()
+                .insert(Compound::<7>::from_str("7a").unwrap());
         }
         for _ in 0..30 {
-            commands.spawn().insert(Compound::from_str("be").unwrap());
+            commands
+                .spawn()
+                .insert(Compound::<7>::from_str("be").unwrap());
         }
     }
 
@@ -74,7 +80,7 @@ mod systems {
     use std::{cmp::Ordering, collections::HashMap};
 
     pub fn compound_rank_display(
-        compound_query: Query<&Compound>,
+        compound_query: Query<&Compound<7>>,
         mut rank_display_query: Query<&mut Text, With<RankDisplayer>>,
     ) {
         for mut rank_text in rank_display_query.iter_mut() {
