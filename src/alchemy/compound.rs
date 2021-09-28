@@ -149,26 +149,28 @@ impl<const W: u32> Compound<W> {
         left_element_counts: ElementCounts,
         right_element_counts: ElementCounts,
     ) -> HashSet<(Compound<W>, Compound<W>)> {
-        if (left_element_counts.weight() > W || right_element_counts.weight() > W)
-            || (total_element_counts.weight() == 0
-                && (left_element_counts.weight() < W || right_element_counts.weight() < W))
-        {
-            // The selected rearrangement is invalid
+        if left_element_counts.weight() > W || right_element_counts.weight() > W {
+            // The selected rearrangement is invalid (overweight)
             HashSet::new()
         } else if total_element_counts.weight() == 0 {
-            // The selected rearrangement is valid.
-            // We know this because neither element_counts exceed the desired_weight,
-            // despite the fact that all elements have been redistributed.
-            let mut result = HashSet::new();
-            result.insert((
-                left_element_counts
-                    .try_into()
-                    .expect("All possible reactions should be valid"),
-                right_element_counts
-                    .try_into()
-                    .expect("All possible reactions should be valid"),
-            ));
-            result
+            if left_element_counts.weight() < W || right_element_counts.weight() < W {
+                // The selected rearrangement is invalid (underweight)
+                HashSet::new()
+            } else {
+                // The selected rearrangement is valid.
+                // We know this because neither element_counts exceed the desired_weight,
+                // despite the fact that all elements have been redistributed.
+                let mut result = HashSet::new();
+                result.insert((
+                    left_element_counts
+                        .try_into()
+                        .expect("All possible reactions should be valid"),
+                    right_element_counts
+                        .try_into()
+                        .expect("All possible reactions should be valid"),
+                ));
+                result
+            }
         } else {
             // We need to pick an element to subtract from the total_element_counts
             // and add to one of the new compounds for the next step of recursion.
