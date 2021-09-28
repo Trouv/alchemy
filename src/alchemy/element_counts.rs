@@ -46,39 +46,3 @@ pub fn add_element_counts(
 
     total_element_counts
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_impossible_element_rearrangements_give_empty_list() {
-        let mut left_element_counts: ElementCounts = HashMap::new();
-        let mut right_element_counts: ElementCounts = HashMap::new();
-
-        left_element_counts.insert(Element::C, 5);
-        right_element_counts.insert(Element::B, 2);
-        assert_eq!(
-            Vec::<(ElementCounts, ElementCounts)>::new(),
-            element_rearrangements_of_equal_weight(&left_element_counts, &right_element_counts)
-        );
-
-        left_element_counts.clear();
-        right_element_counts.clear();
-        left_element_counts.insert(Element::A, 1);
-        assert_eq!(
-            Vec::<(ElementCounts, ElementCounts)>::new(),
-            element_rearrangements_of_equal_weight(&left_element_counts, &right_element_counts)
-        );
-
-        // The total weight doesn't have to be odd to be impossible
-        left_element_counts.clear();
-        right_element_counts.clear();
-        left_element_counts.insert(Element::C, 5);
-        right_element_counts.insert(Element::E, 1);
-        assert_eq!(
-            Vec::<(ElementCounts, ElementCounts)>::new(),
-            element_rearrangements_of_equal_weight(&left_element_counts, &right_element_counts)
-        );
-    }
-}

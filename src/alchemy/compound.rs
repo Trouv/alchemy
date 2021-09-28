@@ -379,4 +379,33 @@ mod tests {
 
         Ok(())
     }
+
+    #[test]
+    fn test_impossible_reaction_recursion_gives_empty_list() {
+        // Can't be divided into two
+        let mut total_element_counts: ElementCounts = HashMap::new();
+        total_element_counts.insert(Element::C, 5);
+        total_element_counts.insert(Element::E, 1);
+        assert_eq!(
+            HashSet::new(),
+            Compound::<10>::reaction_recursion(
+                &total_element_counts,
+                ElementCounts::new(),
+                ElementCounts::new()
+            )
+        );
+
+        // Exceeds desired weight
+        total_element_counts.clear();
+        total_element_counts.insert(Element::A, 4);
+        total_element_counts.insert(Element::B, 2);
+        assert_eq!(
+            HashSet::new(),
+            Compound::<2>::reaction_recursion(
+                &total_element_counts,
+                ElementCounts::new(),
+                ElementCounts::new()
+            )
+        );
+    }
 }
