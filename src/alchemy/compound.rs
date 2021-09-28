@@ -1,6 +1,6 @@
 use crate::alchemy::{element::*, element_counts::*, AltonWeighable};
 use nom::combinator;
-use rand::seq::SliceRandom;
+use rand::seq::IteratorRandom;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{HashMap, HashSet},
@@ -125,17 +125,84 @@ impl<const W: u32> Compound<W> {
     }
 
     pub fn react(&mut self, other: &mut Compound<W>) {
-        let possible_reactions =
-            element_rearrangements_of_equal_weight(&self.element_counts, &other.element_counts);
+        let possible_reactions = self.set_of_possible_reactions(&other);
 
         let (self_reaction, other_reaction) = possible_reactions
+            .into_iter()
             .choose(&mut rand::thread_rng())
             .expect("There should at least be two reactions: the current state and its inverse");
 
-        self.element_counts = self_reaction.clone();
-        other.element_counts = other_reaction.clone();
+        *self = self_reaction;
+        *other = other_reaction;
         self.clean();
         other.clean();
+    }
+
+    /// Create a set of all possible redistributions of elements in an ElementCounts into two
+    /// `Compounds<W>`
+    /// This is meant to be called recursively.
+    /// Intended for the reaction logic of compounds
+    ///
+    /// If the elements can't be redistributed to the desired weight, the resulting set will be empty.
+    fn reaction_recursion(
+        total_element_counts: &ElementCounts,
+        left_element_counts: ElementCounts,
+        right_element_counts: ElementCounts,
+    ) -> HashSet<(Compound<W>, Compound<W>)> {
+        if left_element_counts.weight() > W || right_element_counts.weight() > W {
+            // The selected rearrangement is invalid
+            HashSet::new()
+        } else if total_element_counts.weight() == 0 {
+            // The selected rearrangement is valid.
+            // We know this because neither element_counts exceed the desired_weight,
+            // despite the fact that all elements have been redistributed.
+            let mut result = HashSet::new();
+            result.insert((
+                left_element_counts
+                    .try_into()
+                    .expect("All possible reactions should be valid"),
+                right_element_counts
+                    .try_into()
+                    .expect("All possible reactions should be valid"),
+            ));
+            result
+        } else {
+            // We need to pick an element to subtract from the total_element_counts
+            // and add to one of the new compounds for the next step of recursion.
+            // We just pick the first (nonzero) in .into_iter() since order shouldn't matter
+            let (selected_element, selected_element_count) = total_element_counts
+                .clone()
+                .into_iter()
+                .filter(|(_, v)| *v > 0)
+                .next()
+                .expect("We've already checked for an empty total_element_counts");
+
+            // Cloning to do this subtraction immutably,
+            // not sure this is totally necessary.
+            let mut new_total_element_counts = total_element_counts.clone();
+            new_total_element_counts.insert(selected_element, selected_element_count - 1);
+
+            // Create the new ElementCounts with the added element
+            let mut left_insert = left_element_counts.clone();
+            *left_insert.entry(selected_element).or_insert(0) += 1;
+            let mut right_insert = right_element_counts.clone();
+            *right_insert.entry(selected_element).or_insert(0) += 1;
+
+            // Recurse with both possible redistributions
+            let mut possible_reactions = HashSet::new();
+            possible_reactions.extend(Self::reaction_recursion(
+                &new_total_element_counts,
+                left_insert,
+                right_element_counts,
+            ));
+            possible_reactions.extend(Self::reaction_recursion(
+                &new_total_element_counts,
+                left_element_counts,
+                right_insert,
+            ));
+
+            possible_reactions
+        }
     }
 
     /// Leverages `alchemy::element::element_rearrangements_of_equal_weight()` to list all possible
@@ -147,29 +214,13 @@ impl<const W: u32> Compound<W> {
         &self,
         other: &Compound<W>,
     ) -> HashSet<(Compound<W>, Compound<W>)> {
-        element_rearrangements_of_equal_weight(&self.element_counts, &other.element_counts)
-            .into_iter()
-            .map(|(left_ec, right_ec)| {
-                (
-                    left_ec
-                        .try_into()
-                        .expect("All possible reactions should be valid"),
-                    right_ec
-                        .try_into()
-                        .expect("All possible reactions should be valid"),
-                )
-            })
-            .collect()
-        //let mut result = HashSet::new();
-        //for (left, right) in set_with_inverses.into_iter() {
-        //if !result.contains(&(right.clone(), left.clone()))
-        //&& !(left == *self && right == *other)
-        //&& !(right == *self && left == *other)
-        //{
-        //result.insert((left, right));
-        //}
-        //}
-        //result
+        let total_element_counts = add_element_counts(&self.element_counts, &other.element_counts);
+
+        Self::reaction_recursion(
+            &total_element_counts,
+            ElementCounts::new(),
+            ElementCounts::new(),
+        )
     }
 }
 

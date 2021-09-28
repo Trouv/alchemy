@@ -33,7 +33,7 @@ pub fn element_counts_parser(input: &str) -> IResult<&str, ElementCounts> {
     ))
 }
 
-fn add_element_counts(
+pub fn add_element_counts(
     left_element_counts: &ElementCounts,
     right_element_counts: &ElementCounts,
 ) -> ElementCounts {
@@ -45,83 +45,6 @@ fn add_element_counts(
         .for_each(drop);
 
     total_element_counts
-}
-
-/// Create a list of all possible rearrangements of elements in two `ElementCounts`, so the
-/// resulting `ElementCounts` have equal weight.
-/// This is meant to be called recursively.
-/// Intended for the reaction logic of compounds
-///
-/// If the elements can't be redistributed to the desired weight, the resulting list will be empty.
-pub fn element_rearrangements_of_equal_weight(
-    left_element_counts: &ElementCounts,
-    right_element_counts: &ElementCounts,
-) -> Vec<(ElementCounts, ElementCounts)> {
-    fn recurse(
-        total_element_counts: &ElementCounts,
-        left_element_counts: ElementCounts,
-        right_element_counts: ElementCounts,
-        desired_weight: u32,
-    ) -> Vec<(ElementCounts, ElementCounts)> {
-        if left_element_counts.weight() > desired_weight
-            || right_element_counts.weight() > desired_weight
-        {
-            // The selected rearrangement is invalid
-            Vec::new()
-        } else if total_element_counts.weight() == 0 {
-            // The selected rearrangement is valid.
-            // We know this because neither element_counts exceed the desired_weight,
-            // despite the fact that all elements have been redistributed.
-            vec![(left_element_counts, right_element_counts)]
-        } else {
-            // We need to pick an element to subtract from the total_element_counts
-            // and add to one of the new compounds for the next step of recursion.
-            // We just pick the first (nonzero) in .into_iter() since order shouldn't matter
-            let (selected_element, selected_element_count) = total_element_counts
-                .clone()
-                .into_iter()
-                .filter(|(_, v)| *v > 0)
-                .next()
-                .expect("We've already checked for an empty total_element_counts");
-
-            // Cloning to do this subtraction immutably,
-            // not sure this is totally necessary.
-            let mut new_total_element_counts = total_element_counts.clone();
-            new_total_element_counts.insert(selected_element, selected_element_count - 1);
-
-            // Create the new ElementCounts with the added element
-            let mut left_insert = left_element_counts.clone();
-            *left_insert.entry(selected_element).or_insert(0) += 1;
-            let mut right_insert = right_element_counts.clone();
-            *right_insert.entry(selected_element).or_insert(0) += 1;
-
-            // Recurse with both possible redistributions
-            let mut possible_reactions = Vec::new();
-            possible_reactions.append(&mut recurse(
-                &new_total_element_counts,
-                left_insert,
-                right_element_counts,
-                desired_weight,
-            ));
-            possible_reactions.append(&mut recurse(
-                &new_total_element_counts,
-                left_element_counts,
-                right_insert,
-                desired_weight,
-            ));
-
-            possible_reactions
-        }
-    }
-
-    let total_element_counts = add_element_counts(left_element_counts, right_element_counts);
-
-    recurse(
-        &total_element_counts,
-        HashMap::new(),
-        HashMap::new(),
-        total_element_counts.weight() / 2,
-    )
 }
 
 #[cfg(test)]
