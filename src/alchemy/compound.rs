@@ -151,6 +151,7 @@ impl<const W: u32> Compound<W> {
     ) -> HashSet<(Compound<W>, Compound<W>)> {
         if left_element_counts.weight() > W || right_element_counts.weight() > W {
             // The selected rearrangement is invalid (overweight)
+            // Done outside of total_element_counts == 0 to end some branches early
             HashSet::new()
         } else if total_element_counts.weight() == 0 {
             if left_element_counts.weight() < W || right_element_counts.weight() < W {
@@ -158,7 +159,7 @@ impl<const W: u32> Compound<W> {
                 HashSet::new()
             } else {
                 // The selected rearrangement is valid.
-                // We know this because neither element_counts exceed the desired_weight,
+                // We know this because neither element_counts are over/underweight,
                 // despite the fact that all elements have been redistributed.
                 let mut result = HashSet::new();
                 result.insert((
@@ -210,11 +211,6 @@ impl<const W: u32> Compound<W> {
         }
     }
 
-    /// Leverages `alchemy::element::element_rearrangements_of_equal_weight()` to list all possible
-    /// reactions between two compounds.
-    ///
-    /// This is not used in `react()`, which prefers to `Compound::try_from(ElementCounts)` only
-    /// once, after a rearrangement is randomly selected.
     pub fn set_of_possible_reactions(
         &self,
         other: &Compound<W>,
