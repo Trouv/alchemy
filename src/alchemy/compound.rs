@@ -149,7 +149,10 @@ impl<const W: u32> Compound<W> {
         left_element_counts: ElementCounts,
         right_element_counts: ElementCounts,
     ) -> HashSet<(Compound<W>, Compound<W>)> {
-        if left_element_counts.weight() > W || right_element_counts.weight() > W {
+        if (left_element_counts.weight() > W || right_element_counts.weight() > W)
+            || (total_element_counts.weight() == 0
+                && (left_element_counts.weight() < W || right_element_counts.weight() < W))
+        {
             // The selected rearrangement is invalid
             HashSet::new()
         } else if total_element_counts.weight() == 0 {
@@ -402,6 +405,20 @@ mod tests {
         assert_eq!(
             HashSet::new(),
             Compound::<2>::reaction_recursion(
+                &total_element_counts,
+                ElementCounts::new(),
+                ElementCounts::new()
+            )
+        );
+
+        // Under desired weight
+        total_element_counts.clear();
+        total_element_counts.insert(Element::A, 3);
+        total_element_counts.insert(Element::B, 2);
+        total_element_counts.insert(Element::C, 1);
+        assert_eq!(
+            HashSet::new(),
+            Compound::<11>::reaction_recursion(
                 &total_element_counts,
                 ElementCounts::new(),
                 ElementCounts::new()
