@@ -223,6 +223,22 @@ impl<const W: u32> Alchemical<W> {
     }
 }
 
+pub fn reduce_reverse_pairs<T>(pairs: HashSet<(T, T)>) -> HashSet<(T, T)>
+where
+    T: std::hash::Hash + Eq + Clone,
+{
+    pairs
+        .into_iter()
+        .fold(HashSet::new(), |mut collected, (l, r)| {
+            if collected.contains(&(r.clone(), l.clone())) {
+                collected
+            } else {
+                collected.insert((l, r));
+                collected
+            }
+        })
+}
+
 pub type Compound = Alchemical<7>;
 
 #[cfg(test)]

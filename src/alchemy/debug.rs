@@ -28,13 +28,13 @@ mod transitions {
 
     pub fn spawn_test_compounds(mut commands: Commands) {
         for _ in 0..20 {
-            commands.spawn().insert(Compound::from_str("a3b").unwrap());
+            commands.spawn().insert(Compound::from_str("A3B").unwrap());
         }
         for _ in 0..30 {
-            commands.spawn().insert(Compound::from_str("7a").unwrap());
+            commands.spawn().insert(Compound::from_str("7A").unwrap());
         }
         for _ in 0..30 {
-            commands.spawn().insert(Compound::from_str("be").unwrap());
+            commands.spawn().insert(Compound::from_str("BE").unwrap());
         }
     }
 
