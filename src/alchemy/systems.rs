@@ -10,7 +10,7 @@ pub fn get_reactive_compounds(
     reaction_rules: &Vec<ReactionRule>,
     stir_method: Option<StirMethod>,
     heat: Option<Heat>,
-) -> Vec<Compound<7>> {
+) -> Vec<Compound> {
     reaction_rules
         .clone()
         .into_iter()
@@ -34,7 +34,7 @@ pub fn get_reactive_compounds(
             stir_match && heat_match
         })
         .map(|rule| rule.compound)
-        .collect::<Vec<Compound<7>>>()
+        .collect::<Vec<Compound>>()
 }
 
 const COLLISION_CHANCE: f32 = 0.1;
@@ -43,7 +43,7 @@ const COLLISION_CHANCE: f32 = 0.1;
 /// In this case, we could technically handle it as a Resource, but I prefer the ergonomics of
 /// having it represented by many components.
 pub fn brewing(
-    mut compound_query: Query<&mut Compound<7>>,
+    mut compound_query: Query<&mut Compound>,
     cauldron_query: Query<(&Heat, &StirMethod), With<Cauldron>>,
     reaction_rules: Res<Vec<ReactionRule>>,
 ) {

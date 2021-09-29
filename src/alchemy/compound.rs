@@ -3,29 +3,27 @@ use nom::combinator;
 use rand::seq::IteratorRandom;
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashSet,
     convert::{TryFrom, TryInto},
     fmt, hash,
     str::FromStr,
 };
 use thiserror::Error;
 
-const COMPOUND_WEIGHT: u32 = 7;
-
 #[derive(Error, Debug, PartialEq)]
 pub enum CompoundError {
-    #[error("invalid alton count in compound: {size}")]
+    #[error("invalid alton count in alchemical: {size}")]
     SizeError { size: u32 },
-    #[error("failed to parse compound")]
+    #[error("failed to parse alchemical")]
     ParseError,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
-pub struct Compound<const W: u32> {
+pub struct Alchemical<const W: u32> {
     element_counts: ElementCounts,
 }
 
-impl<const W: u32> fmt::Display for Compound<W> {
+impl<const W: u32> fmt::Display for Alchemical<W> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut element_count_pairs = self
             .clone()
@@ -49,18 +47,18 @@ impl<const W: u32> fmt::Display for Compound<W> {
     }
 }
 
-impl<const W: u32> hash::Hash for Compound<W> {
+impl<const W: u32> hash::Hash for Alchemical<W> {
     fn hash<H: hash::Hasher>(&self, state: &mut H) {
         self.to_string().hash(state);
     }
 }
 
-impl<const W: u32> FromStr for Compound<W> {
+impl<const W: u32> FromStr for Alchemical<W> {
     type Err = CompoundError;
 
     fn from_str(value: &str) -> Result<Self, Self::Err> {
         match combinator::all_consuming(element_counts_parser)(value) {
-            Ok((_, element_counts)) => Ok(Compound::try_from(element_counts)?),
+            Ok((_, element_counts)) => Ok(Alchemical::try_from(element_counts)?),
             _ => Err(CompoundError::ParseError),
         }
     }
@@ -68,11 +66,11 @@ impl<const W: u32> FromStr for Compound<W> {
 
 /// All public constructors of Compound should just call this, since it's directly tied to the
 /// internal data structure, and performs the necessary validation.
-impl<const W: u32> TryFrom<ElementCounts> for Compound<W> {
+impl<const W: u32> TryFrom<ElementCounts> for Alchemical<W> {
     type Error = CompoundError;
 
-    fn try_from(element_counts: ElementCounts) -> Result<Compound<W>, Self::Error> {
-        let mut result = Compound { element_counts };
+    fn try_from(element_counts: ElementCounts) -> Result<Alchemical<W>, Self::Error> {
+        let mut result = Alchemical { element_counts };
 
         result.clean();
 
@@ -86,28 +84,28 @@ impl<const W: u32> TryFrom<ElementCounts> for Compound<W> {
     }
 }
 
-impl<const W: u32> AltonWeighable for Compound<W> {
+impl<const W: u32> AltonWeighable for Alchemical<W> {
     fn weight(&self) -> u32 {
         self.element_counts.weight()
     }
 }
 
-impl<const W: u32> Compound<W> {
+impl<const W: u32> Alchemical<W> {
     pub fn try_from_element_counts(
         a: u32,
         b: u32,
         c: u32,
         d: u32,
         e: u32,
-    ) -> Result<Compound<W>, CompoundError> {
-        let mut element_counts = HashMap::new();
+    ) -> Result<Alchemical<W>, CompoundError> {
+        let mut element_counts = ElementCounts::new();
         element_counts.insert(Element::A, a);
         element_counts.insert(Element::B, b);
         element_counts.insert(Element::C, c);
         element_counts.insert(Element::D, d);
         element_counts.insert(Element::E, e);
 
-        Ok(Compound::try_from(element_counts)?)
+        Ok(Alchemical::try_from(element_counts)?)
     }
 
     fn validate(&self) -> bool {
@@ -124,7 +122,7 @@ impl<const W: u32> Compound<W> {
             .collect::<ElementCounts>();
     }
 
-    pub fn react(&mut self, other: &mut Compound<W>) {
+    pub fn react(&mut self, other: &mut Alchemical<W>) {
         let possible_reactions = self.set_of_possible_reactions(&other);
 
         let (self_reaction, other_reaction) = possible_reactions
@@ -141,14 +139,14 @@ impl<const W: u32> Compound<W> {
     /// Create a set of all possible redistributions of elements in an ElementCounts into two
     /// `Compounds<W>`
     /// This is meant to be called recursively.
-    /// Intended for the reaction logic of compounds
+    /// Intended for the reaction logic of alchemicals
     ///
     /// If the elements can't be redistributed to the desired weight, the resulting set will be empty.
     fn reaction_recursion(
         total_element_counts: &ElementCounts,
         left_element_counts: ElementCounts,
         right_element_counts: ElementCounts,
-    ) -> HashSet<(Compound<W>, Compound<W>)> {
+    ) -> HashSet<(Alchemical<W>, Alchemical<W>)> {
         if left_element_counts.weight() > W || right_element_counts.weight() > W {
             // The selected rearrangement is invalid (overweight)
             // Done outside of total_element_counts == 0 to end some branches early
@@ -174,7 +172,7 @@ impl<const W: u32> Compound<W> {
             }
         } else {
             // We need to pick an element to subtract from the total_element_counts
-            // and add to one of the new compounds for the next step of recursion.
+            // and add to one of the new alchemicals for the next step of recursion.
             // We just pick the first (nonzero) in .into_iter() since order shouldn't matter
             let (selected_element, selected_element_count) = total_element_counts
                 .clone()
@@ -213,8 +211,8 @@ impl<const W: u32> Compound<W> {
 
     pub fn set_of_possible_reactions(
         &self,
-        other: &Compound<W>,
-    ) -> HashSet<(Compound<W>, Compound<W>)> {
+        other: &Alchemical<W>,
+    ) -> HashSet<(Alchemical<W>, Alchemical<W>)> {
         let total_element_counts = add_element_counts(&self.element_counts, &other.element_counts);
 
         Self::reaction_recursion(
@@ -225,140 +223,142 @@ impl<const W: u32> Compound<W> {
     }
 }
 
+pub type Compound = Alchemical<7>;
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_compound_equality() -> Result<(), CompoundError> {
+    fn test_alchemical_equality() -> Result<(), CompoundError> {
         assert_eq!(
-            Compound::<7>::try_from_element_counts(0, 1, 0, 0, 1)?,
-            Compound::<7>::try_from_element_counts(0, 1, 0, 0, 1)?
+            Alchemical::<7>::try_from_element_counts(0, 1, 0, 0, 1)?,
+            Alchemical::<7>::try_from_element_counts(0, 1, 0, 0, 1)?
         );
         Ok(())
     }
 
     #[test]
-    fn test_compound_appropriate_size_ok() -> Result<(), CompoundError> {
-        Compound::<7>::try_from_element_counts(7, 0, 0, 0, 0)?;
-        Compound::<7>::try_from_element_counts(2, 0, 0, 0, 1)?;
-        Compound::<7>::try_from_element_counts(3, 0, 0, 1, 0)?;
-        Compound::<7>::try_from_element_counts(0, 0, 1, 1, 0)?;
+    fn test_alchemical_appropriate_size_ok() -> Result<(), CompoundError> {
+        Alchemical::<7>::try_from_element_counts(7, 0, 0, 0, 0)?;
+        Alchemical::<7>::try_from_element_counts(2, 0, 0, 0, 1)?;
+        Alchemical::<7>::try_from_element_counts(3, 0, 0, 1, 0)?;
+        Alchemical::<7>::try_from_element_counts(0, 0, 1, 1, 0)?;
         Ok(())
     }
 
     #[test]
-    fn test_compound_inappropriate_size_fails() {
+    fn test_alchemical_inappropriate_size_fails() {
         assert_eq!(
-            Compound::<7>::try_from_element_counts(5, 0, 0, 0, 0),
+            Alchemical::<7>::try_from_element_counts(5, 0, 0, 0, 0),
             Err(CompoundError::SizeError { size: 5 })
         );
         assert_eq!(
-            Compound::<7>::try_from_element_counts(0, 0, 0, 0, 2),
+            Alchemical::<7>::try_from_element_counts(0, 0, 0, 0, 2),
             Err(CompoundError::SizeError { size: 10 })
         );
         assert_eq!(
-            Compound::<7>::try_from_element_counts(0, 1, 1, 1, 0),
+            Alchemical::<7>::try_from_element_counts(0, 1, 1, 1, 0),
             Err(CompoundError::SizeError { size: 9 })
         );
         assert_eq!(
-            Compound::<7>::try_from_element_counts(0, 1, 0, 1, 0),
+            Alchemical::<7>::try_from_element_counts(0, 1, 0, 1, 0),
             Err(CompoundError::SizeError { size: 6 })
         );
     }
 
     #[test]
-    fn test_compound_reaction_validity() -> Result<(), CompoundError> {
-        let mut compound_a = Compound::<7>::try_from_element_counts(1, 3, 0, 0, 0)?;
-        let mut compound_b = Compound::<7>::try_from_element_counts(2, 1, 1, 0, 0)?;
-        let mut compound_c = Compound::<7>::try_from_element_counts(0, 1, 0, 0, 1)?;
-        let mut compound_d = Compound::<7>::try_from_element_counts(0, 0, 1, 1, 0)?;
+    fn test_alchemical_reaction_validity() -> Result<(), CompoundError> {
+        let mut alchemical_a = Alchemical::<7>::try_from_element_counts(1, 3, 0, 0, 0)?;
+        let mut alchemical_b = Alchemical::<7>::try_from_element_counts(2, 1, 1, 0, 0)?;
+        let mut alchemical_c = Alchemical::<7>::try_from_element_counts(0, 1, 0, 0, 1)?;
+        let mut alchemical_d = Alchemical::<7>::try_from_element_counts(0, 0, 1, 1, 0)?;
 
         println!(
             "{} {} {} {}",
-            compound_a, compound_b, compound_c, compound_d
+            alchemical_a, alchemical_b, alchemical_c, alchemical_d
         );
 
-        compound_a.react(&mut compound_b);
-        compound_c.react(&mut compound_d);
-        assert_eq!(compound_a.validate(), true);
-        assert_eq!(compound_b.validate(), true);
-        assert_eq!(compound_c.validate(), true);
-        assert_eq!(compound_d.validate(), true);
+        alchemical_a.react(&mut alchemical_b);
+        alchemical_c.react(&mut alchemical_d);
+        assert_eq!(alchemical_a.validate(), true);
+        assert_eq!(alchemical_b.validate(), true);
+        assert_eq!(alchemical_c.validate(), true);
+        assert_eq!(alchemical_d.validate(), true);
 
         println!(
             "{} {} {} {}",
-            compound_a, compound_b, compound_c, compound_d
+            alchemical_a, alchemical_b, alchemical_c, alchemical_d
         );
 
-        compound_a.react(&mut compound_c);
-        compound_b.react(&mut compound_d);
-        assert_eq!(compound_a.validate(), true);
-        assert_eq!(compound_b.validate(), true);
-        assert_eq!(compound_c.validate(), true);
-        assert_eq!(compound_d.validate(), true);
+        alchemical_a.react(&mut alchemical_c);
+        alchemical_b.react(&mut alchemical_d);
+        assert_eq!(alchemical_a.validate(), true);
+        assert_eq!(alchemical_b.validate(), true);
+        assert_eq!(alchemical_c.validate(), true);
+        assert_eq!(alchemical_d.validate(), true);
         println!(
             "{} {} {} {}",
-            compound_a, compound_b, compound_c, compound_d
+            alchemical_a, alchemical_b, alchemical_c, alchemical_d
         );
 
-        compound_a.react(&mut compound_d);
-        compound_b.react(&mut compound_c);
-        assert_eq!(compound_a.validate(), true);
-        assert_eq!(compound_b.validate(), true);
-        assert_eq!(compound_c.validate(), true);
-        assert_eq!(compound_d.validate(), true);
+        alchemical_a.react(&mut alchemical_d);
+        alchemical_b.react(&mut alchemical_c);
+        assert_eq!(alchemical_a.validate(), true);
+        assert_eq!(alchemical_b.validate(), true);
+        assert_eq!(alchemical_c.validate(), true);
+        assert_eq!(alchemical_d.validate(), true);
         println!(
             "{} {} {} {}",
-            compound_a, compound_b, compound_c, compound_d
+            alchemical_a, alchemical_b, alchemical_c, alchemical_d
         );
 
         Ok(())
     }
 
     #[test]
-    fn test_compound_parsing() -> Result<(), CompoundError> {
+    fn test_alchemical_parsing() -> Result<(), CompoundError> {
         assert_eq!(
-            Compound::<7>::from_str("2ABC")?,
-            Compound::<7>::try_from_element_counts(2, 1, 1, 0, 0)?
+            Alchemical::<7>::from_str("2ABC")?,
+            Alchemical::<7>::try_from_element_counts(2, 1, 1, 0, 0)?
         );
         assert_eq!(
-            Compound::<7>::from_str("BE")?,
-            Compound::<7>::try_from_element_counts(0, 1, 0, 0, 1)?
+            Alchemical::<7>::from_str("BE")?,
+            Alchemical::<7>::try_from_element_counts(0, 1, 0, 0, 1)?
         );
         assert_eq!(
-            Compound::<7>::from_str("3A1D")?,
-            Compound::<7>::try_from_element_counts(3, 0, 0, 1, 0)?
+            Alchemical::<7>::from_str("3A1D")?,
+            Alchemical::<7>::try_from_element_counts(3, 0, 0, 1, 0)?
         );
         Ok(())
     }
 
     #[test]
-    fn test_compound_parsing_failures() {
+    fn test_alchemical_parsing_failures() {
         assert_eq!(
-            Compound::<7>::from_str("D3A"),
+            Alchemical::<7>::from_str("D3A"),
             Err(CompoundError::ParseError)
         );
         assert_eq!(
-            Compound::<7>::from_str("FAF"),
+            Alchemical::<7>::from_str("FAF"),
             Err(CompoundError::ParseError)
         );
         assert_eq!(
-            Compound::<7>::from_str("ABC"),
+            Alchemical::<7>::from_str("ABC"),
             Err(CompoundError::SizeError { size: 6 })
         );
         assert_eq!(
-            Compound::<7>::from_str("ACD"),
+            Alchemical::<7>::from_str("ACD"),
             Err(CompoundError::SizeError { size: 8 })
         );
     }
 
     #[test]
     fn test_list_possible_reactions() -> Result<(), CompoundError> {
-        let left_compound: Compound<7> = "2AE".parse()?;
-        let right_compound: Compound<7> = "A3B".parse()?;
+        let left_alchemical: Alchemical<7> = "2AE".parse()?;
+        let right_alchemical: Alchemical<7> = "A3B".parse()?;
 
-        let possible_reactions = left_compound.set_of_possible_reactions(&right_compound);
+        let possible_reactions = left_alchemical.set_of_possible_reactions(&right_alchemical);
         println!("{:?}", possible_reactions);
 
         assert_eq!(
@@ -384,12 +384,12 @@ mod tests {
     #[test]
     fn test_impossible_reaction_recursion_gives_empty_list() {
         // Can't be divided into two
-        let mut total_element_counts: ElementCounts = HashMap::new();
+        let mut total_element_counts: ElementCounts = ElementCounts::new();
         total_element_counts.insert(Element::C, 5);
         total_element_counts.insert(Element::E, 1);
         assert_eq!(
             HashSet::new(),
-            Compound::<10>::reaction_recursion(
+            Alchemical::<10>::reaction_recursion(
                 &total_element_counts,
                 ElementCounts::new(),
                 ElementCounts::new()
@@ -402,7 +402,7 @@ mod tests {
         total_element_counts.insert(Element::B, 2);
         assert_eq!(
             HashSet::new(),
-            Compound::<2>::reaction_recursion(
+            Alchemical::<2>::reaction_recursion(
                 &total_element_counts,
                 ElementCounts::new(),
                 ElementCounts::new()
@@ -416,7 +416,7 @@ mod tests {
         total_element_counts.insert(Element::C, 1);
         assert_eq!(
             HashSet::new(),
-            Compound::<11>::reaction_recursion(
+            Alchemical::<11>::reaction_recursion(
                 &total_element_counts,
                 ElementCounts::new(),
                 ElementCounts::new()

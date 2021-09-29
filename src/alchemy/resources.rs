@@ -8,7 +8,7 @@ use std::{fs, io};
 #[derive(Clone, Eq, PartialEq, Debug, Default, Serialize, Deserialize)]
 pub struct ReactionRule {
     #[serde_as(as = "DisplayFromStr")]
-    pub compound: Compound<7>,
+    pub compound: Compound,
     /// Setting to None means this compound reacts under any heat
     pub heat: Option<Heat>,
     /// Setting to None means this compound reacts under any stir method
