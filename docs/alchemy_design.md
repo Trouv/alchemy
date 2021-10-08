@@ -7,14 +7,25 @@ Design changes, if they're significant enough, should also probably be documente
 Warning: this document contains spoilers for the game.
 Discovering and experimenting with these mechanics is part of the fun!
 
-### Design Goals
+## Design Goals
+The final design of the alchemy system should at least meet the following criteria:
 1. Systemic/emergent - no scripted recipes
 2. Technical - takes some physical skill, dexterity, mastery
 3. Meritocratic - Better results require more skill, more complicated recipes, rarer ingredients, etc
 4. Obscure - internal workings not revealed to player.
    Though, they may be discoverable through experimentation, or progressing the story/side quests.
 
-## Chemistry-based solutions
+Why these criteria?
+Well this is personally the exact kind of system that I love playing with in games.
+Deep systems with some elements of mastery and mystery.
+
+The following sections of this document go over some other "goals", though these are mostly just in service of the four above.
+Consequently, we call them ideas instead of goals.
+They also go into more detail and flesh out the system much more than these main design goals.
+The ultimate design may incorporate elements from any combination of these ideas.
+In other words, they are not mutually exclusive.
+
+## Idea: Chemistry-based
 This seems to be as good a place as any to start.
 The idea is simple, there are some basic alchemical elements and the way that these elements interact with eachother is not too far off from the interactions on the periodic table.
 These elements each contain a certain number of "altons" (like protons but magical).
@@ -40,3 +51,6 @@ Compound-based ingredients could even allow for some nice depth in the farming m
 Ingredients could be affected by the presence of weeds simply by altering their compound structure.
 Or, even better, the player could play around with breeding their ingredients.
 Are GMOs cottage-core?
+
+## Idea: Alchemy-based
+TODO: research actual alchemy
