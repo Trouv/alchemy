@@ -56,7 +56,35 @@ Are GMOs cottage-core?
 Perhaps some of the theory and practice of potion making could be based on real-life alchemy/potion making.
 Not necessarily the alchemy interested in the transmutation of metals, but more the medicinal alchemy.
 There's some interesting information about historical alchemy on wikipedia.
-The most relevant articles outside of the article on Alchemy itself seem to be Spagyric, Herbal Medicine, Potion.
+The most relevant articles outside of the article on Alchemy itself seem to be Spagyric, Herbal Medicine, Potion, and Extract.
 We could also probably find additional inspiration in Rennaissance Magic and Necromancy (not just about death apparently).
 
+### Techniques
+Alchemical procedures include:
+- fermentation (conversion to alcohol w/ microorganisms)
+- distillation (boiling then collecting the condensation)
+- absorption (steeping material in a solvent)
+- expression (juicing)
 
+Absorption may be split up into:
+- infusion (steeping in hot water)
+- decoction (long-term boiled extracts for harder materials)
+- maceration (softening material w/o heat in water or oil)
+
+We may be able to take inspiration from all of these techniques when developing the alchemy.
+Of course, we are also interested in just plain alchemical reaction when combining ingredients/extracts/tinctures/potions.
+
+### Tools
+Originally the plan was just to stick to plain alchemical reactions in the cauldron.
+However, taking inspiration from real-world alchemy, we may be able to add some more "vectors of input".
+
+Some old alchemical tools for metallurgy include:
+- crucibles (for carrying smaller amounts of hot liquid)
+- bellows (for adding oxygen to fires)
+- filters
+- cauldron
+- alembic (for distillation)
+
+There are probably other tools that are more applicable to medicinal alchemy.
+A Mortar and Pestle come to mind.
+TODO: research old pharmaceutical tools.
