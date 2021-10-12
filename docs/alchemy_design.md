@@ -53,4 +53,10 @@ Or, even better, the player could play around with breeding their ingredients.
 Are GMOs cottage-core?
 
 ## Idea: Alchemy-based
-TODO: research actual alchemy
+Perhaps some of the theory and practice of potion making could be based on real-life alchemy/potion making.
+Not necessarily the alchemy interested in the transmutation of metals, but more the medicinal alchemy.
+There's some interesting information about historical alchemy on wikipedia.
+The most relevant articles outside of the article on Alchemy itself seem to be Spagyric, Herbal Medicine, Potion.
+We could also probably find additional inspiration in Rennaissance Magic and Necromancy (not just about death apparently).
+
+
